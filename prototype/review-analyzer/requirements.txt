@@ -1,0 +1,8 @@
+# Core dependencies - all from Python standard library
+# No external packages required for basic functionality
+
+# Optional dependencies for enhanced features:
+# ollama          # For LLM integration (install separately)
+# pandas          # For advanced data processing
+# matplotlib      # For generating charts
+# scikit-learn    # For advanced text clustering
