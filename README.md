@@ -1,15 +1,15 @@
-<a href="https://next-saas-stripe-starter.vercel.app">
-  <img alt="SaaS Starter" src="public/_static/og.jpg">
-  <h1 align="center">Next SaaS Stripe Starter</h1>
+<a href="https://app-review-analyzer.vercel.app">
+  <img alt="App Review Analyzer" src="public/_static/og.jpg">
+  <h1 align="center">App Review Analyzer</h1>
 </a>
 
 <p align="center">
-  Start at full speed with SaaS Starter !
+  Turn app store reviews into clear product insights
 </p>
 
 <p align="center">
-  <a href="https://twitter.com/miickasmt">
-    <img src="https://img.shields.io/twitter/follow/miickasmt?style=flat&label=miickasmt&logo=twitter&color=0bf&logoColor=fff" alt="Mickasmt Twitter follower count" />
+  <a href="https://twitter.com/AppDevFoundry">
+    <img src="https://img.shields.io/twitter/follow/AppDevFoundry?style=flat&label=AppDevFoundry&logo=twitter&color=0bf&logoColor=fff" alt="AppDevFoundry Twitter follower count" />
   </a>
 </p>
 
@@ -24,21 +24,21 @@
 
 ## Introduction
 
-Empower your next project with the stack of Next.js 14, Prisma, Neon, Auth.js v5, Resend, React Email, Shadcn/ui, and Stripe.
-<br/>
-All seamlessly integrated with the SaaS Starter to accelerate your development and saas journey.
+App Review Analyzer helps indie developers, small studios, and product teams turn noisy app store reviews into clear product insights. Built with Next.js 14, Prisma, Neon, Auth.js v5, Resend, React Email, Shadcn/ui, and Stripe.
+
+Understand what users actually care about, spot gaps in existing apps, and make better decisions about what to build or improve next.
 
 ## Installation
 
-Clone & create this repo locally with the following command:
+Clone this repo locally with the following command:
 
 ```bash
-npx create-next-app my-saas-project --example "https://github.com/mickasmt/next-saas-stripe-starter"
+git clone https://github.com/AppDevFoundry/app-review-analyzer.git
 ```
 
 Or, deploy with Vercel:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmickasmt%2Fnext-saas-stripe-starter)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAppDevFoundry%2Fapp-review-analyzer)
 
 ### Steps
 
@@ -66,12 +66,10 @@ pnpm run dev
 > Use this command for update your project: `ncu -i --format group`
 
 ## Roadmap
-- [ ] Upgrade eslint to v9
-- [ ] Add resend for success subscriptions
+
+See [PROJECT_OVERVIEW_AND_ROADMAP.md](PROJECT_OVERVIEW_AND_ROADMAP.md) for detailed product roadmap and feature plans.
 
 ## Tech Stack + Features
-
-https://github.com/mickasmt/next-saas-stripe-starter/assets/62285783/828a4e0f-30e3-4cfe-96ff-4dfd9cd55124
 
 ### Frameworks
 
@@ -117,12 +115,13 @@ https://github.com/mickasmt/next-saas-stripe-starter/assets/62285783/828a4e0f-30
 
 ## Author
 
-Created by [@miickasmt](https://twitter.com/miickasmt) in 2023, released under the [MIT license](https://github.com/shadcn/taxonomy/blob/main/LICENSE.md).
+Built by [AppDevFoundry](https://github.com/AppDevFoundry), released under the [MIT license](https://github.com/shadcn/taxonomy/blob/main/LICENSE.md).
 
 ## Credits
 
-This project was inspired by shadcn's [Taxonomy](https://github.com/shadcn-ui/taxonomy), Steven Tey’s [Precedent](https://github.com/steven-tey/precedent), and Antonio Erdeljac's [Next 13 AI SaaS](https://github.com/AntonioErdeljac/next13-ai-saas).
+This project is built on top of the excellent [Next SaaS Stripe Starter](https://github.com/mickasmt/next-saas-stripe-starter) by [@miickasmt](https://twitter.com/miickasmt).
 
-- Shadcn ([@shadcn](https://twitter.com/shadcn))
-- Steven Tey ([@steventey](https://twitter.com/steventey))
-- Antonio Erdeljac ([@YTCodeAntonio](https://twitter.com/AntonioErdeljac))
+Additional inspiration from:
+- Shadcn ([@shadcn](https://twitter.com/shadcn)) - [Taxonomy](https://github.com/shadcn-ui/taxonomy)
+- Steven Tey ([@steventey](https://twitter.com/steventey)) - [Precedent](https://github.com/steven-tey/precedent)
+- Antonio Erdeljac ([@YTCodeAntonio](https://twitter.com/AntonioErdeljac)) - [Next 13 AI SaaS](https://github.com/AntonioErdeljac/next13-ai-saas)

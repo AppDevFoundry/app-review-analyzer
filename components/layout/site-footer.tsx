@@ -44,12 +44,21 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
           <p className="text-left text-sm text-muted-foreground">
             Built by{" "}
             <Link
-              href={siteConfig.links.twitter}
+              href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"
             >
-              mickasmt
+              AppDevFoundry
+            </Link>
+            {" "}using{" "}
+            <Link
+              href="https://github.com/mickasmt/next-saas-stripe-starter"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium underline underline-offset-4"
+            >
+              Next SaaS Starter
             </Link>
             . Hosted on{" "}
             <Link
@@ -59,15 +68,6 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
               className="font-medium underline underline-offset-4"
             >
               Vercel
-            </Link>
-            . Illustrations by{" "}
-            <Link
-              href="https://popsy.co"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Popsy
             </Link>
           </p>
 

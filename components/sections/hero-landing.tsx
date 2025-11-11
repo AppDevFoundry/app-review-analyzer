@@ -8,7 +8,7 @@ import { Icons } from "@/components/shared/icons";
 
 export default async function HeroLanding() {
   const { stargazers_count: stars } = await fetch(
-    "https://api.github.com/repos/mickasmt/next-saas-stripe-starter",
+    "https://api.github.com/repos/AppDevFoundry/app-review-analyzer",
     {
       ...(env.GITHUB_OAUTH_TOKEN && {
         headers: {
@@ -27,22 +27,22 @@ export default async function HeroLanding() {
     <section className="space-y-6 py-12 sm:py-20 lg:py-20">
       <div className="container flex max-w-5xl flex-col items-center gap-5 text-center">
         <Link
-          href="https://twitter.com/miickasmt/status/1810465801649938857"
+          href="https://twitter.com/AppDevFoundry"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm", rounded: "full" }),
             "px-4",
           )}
           target="_blank"
         >
-          <span className="mr-3">🎉</span>
-          <span className="hidden md:flex">Introducing&nbsp;</span> Next Auth
-          Roles Template on <Icons.twitter className="ml-2 size-3.5" />
+          <span className="mr-3">📊</span>
+          <span className="hidden md:flex">Follow us on&nbsp;</span>
+          <Icons.twitter className="ml-2 size-3.5" />
         </Link>
 
         <h1 className="text-balance font-urban text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-[66px]">
-          Kick off with a bang with{" "}
+          Turn App Store Reviews into{" "}
           <span className="text-gradient_indigo-purple font-extrabold">
-            SaaS Starter
+            Product Insights
           </span>
         </h1>
 
@@ -50,8 +50,7 @@ export default async function HeroLanding() {
           className="max-w-2xl text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8"
           style={{ animationDelay: "0.35s", animationFillMode: "forwards" }}
         >
-          Build your next project using Next.js 14, Prisma, Neon, Auth.js v5,
-          Resend, React Email, Shadcn/ui, Stripe.
+          Analyze user feedback, discover feature gaps, and make better product decisions for your iOS apps.
         </p>
 
         <div

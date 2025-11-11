@@ -30,7 +30,7 @@ export async function GET(req: Request) {
 
     const fontSize = heading.length > 80 ? "60px" : "80px"
 
-    const githubName = "mickasmt";
+    const githubName = "AppDevFoundry";
 
     return new ImageResponse(
       (
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
               color: 'transparent'
             }}
           >
-            SaaS Starter
+            App Review Analyzer
           </div>
 
           <div tw="flex flex-col flex-1 py-16">
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
                 >
                   {githubName}
                 </div>
-                <div>Open Source Designer</div>
+                <div>iOS Dev Resources & Tools</div>
               </div>
             </div>
 
@@ -126,7 +126,7 @@ export async function GET(req: Request) {
                   stroke-linejoin="round"
                 />
               </svg>
-              <div tw="flex ml-2">github.com/mickasmt/next-saas-stripe-starter</div>
+              <div tw="flex ml-2">github.com/AppDevFoundry/app-review-analyzer</div>
             </div>
           </div>
         </div>

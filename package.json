@@ -1,10 +1,10 @@
 {
-  "name": "saas-starter",
+  "name": "app-review-analyzer",
   "version": "0.3.1",
   "private": true,
   "author": {
-    "name": "mickasmt",
-    "url": "https://twitter.com/mickasmt"
+    "name": "AppDevFoundry",
+    "url": "https://github.com/AppDevFoundry"
   },
   "scripts": {
     "dev": "next dev",

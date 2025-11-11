@@ -1,6 +1,6 @@
 {
-  "name": "SaaS Starter",
-  "short_name": "SaaS Starter",
+  "name": "App Review Analyzer",
+  "short_name": "ReviewAnalyzer",
   "icons": [
     {
       "src": "./favicons/android-chrome-192x192.png",
