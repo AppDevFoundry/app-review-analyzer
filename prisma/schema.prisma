@@ -6,13 +6,74 @@ generator client {
 }
 
 datasource db {
-  provider     = "postgresql"
-  url          = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
   ADMIN
   USER
+}
+
+enum WorkspacePlan {
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum AppPlatform {
+  IOS
+}
+
+enum AppStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum ReviewSource {
+  MOST_RECENT
+  MOST_HELPFUL
+  UNKNOWN
+}
+
+enum SnapshotStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+enum InsightType {
+  FEATURE_REQUEST
+  BUG_OR_COMPLAINT
+  PRAISE
+  USABILITY_ISSUE
+  PERFORMANCE_ISSUE
+  OTHER
+}
+
+enum InsightPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum InsightCategory {
+  FEATURES
+  PRICING
+  UI_UX
+  SYNC_DATA
+  SEARCH_DISCOVERY
+  CRASHES_BUGS
+  PERFORMANCE
+  SOCIAL
 }
 
 model Account {
@@ -59,8 +120,10 @@ model User {
   updatedAt     DateTime  @default(now()) @map(name: "updated_at")
   role          UserRole  @default(USER)
 
-  accounts Account[]
-  sessions Session[]
+  accounts         Account[]
+  sessions         Session[]
+  workspaceMembers WorkspaceMember[]
+  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -77,4 +140,340 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map(name: "verification_tokens")
+}
+
+// ============================================================================
+// Review Analyzer Models
+// ============================================================================
+
+model Workspace {
+  id   String        @id @default(cuid())
+  name String
+  slug String        @unique
+  plan WorkspacePlan @default(STARTER)
+
+  // Plan limits (can override defaults from config)
+  appLimit              Int
+  analysisLimitPerMonth Int
+  reviewLimitPerRun     Int
+
+  // Owner relationship
+  ownerId String
+  owner   User   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Stripe subscription (migrated from User model)
+  stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
+  stripePriceId          String?   @map(name: "stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map(name: "created_at")
+  updatedAt DateTime  @updatedAt @map(name: "updated_at")
+  deletedAt DateTime? @map(name: "deleted_at")
+
+  // Relations
+  members         WorkspaceMember[]
+  apps            App[]
+  reviews         Review[]
+  reviewSnapshots ReviewSnapshot[]
+  insights        ReviewSnapshotInsight[]
+
+  @@index([ownerId])
+  @@index([deletedAt])
+  @@map(name: "workspaces")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole
+
+  invitedBy String?
+  invitedAt DateTime?
+  joinedAt  DateTime  @default(now())
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map(name: "workspace_members")
+}
+
+model App {
+  id          String @id @default(cuid())
+  workspaceId String
+
+  // App Store identifiers
+  platform   AppPlatform
+  appStoreId String // Apple numeric ID (e.g., "1570489264")
+  bundleId   String?
+
+  // App metadata
+  name            String
+  slug            String
+  developerName   String?
+  primaryCategory String?
+  iconUrl         String?
+  storeUrl        String?
+
+  // Ratings info (cached from App Store)
+  averageRating Decimal? @db.Decimal(3, 2)
+  ratingCount   Int?
+
+  // Status
+  status       AppStatus @default(ACTIVE)
+  lastSyncedAt DateTime? @map(name: "last_synced_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+
+  // Relations
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reviews         Review[]
+  reviewSnapshots ReviewSnapshot[]
+
+  @@unique([workspaceId, appStoreId])
+  @@index([workspaceId, status])
+  @@index([platform, appStoreId])
+  @@map(name: "apps")
+}
+
+model Review {
+  id          String @id @default(cuid())
+  workspaceId String
+  appId       String
+
+  // Review identifiers
+  externalReviewId String // Apple review ID
+
+  // Review content
+  rating  Int
+  title   String?
+  content String  @db.Text
+  author  String?
+
+  // Review metadata
+  country     String?
+  language    String?
+  version     String?
+  publishedAt DateTime @map(name: "published_at")
+  fetchedAt   DateTime @default(now()) @map(name: "fetched_at")
+
+  // Vote information
+  voteSum   Int @default(0) @map(name: "vote_sum")
+  voteCount Int @default(0) @map(name: "vote_count")
+
+  // Source tracking
+  source ReviewSource @default(UNKNOWN)
+
+  // Translation support
+  isTranslated        Boolean @default(false) @map(name: "is_translated")
+  translationLanguage String? @map(name: "translation_language")
+
+  // Store original JSON
+  metadata Json?
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+
+  // Relations
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  app          App                 @relation(fields: [appId], references: [id], onDelete: Cascade)
+  insightLinks ReviewInsightLink[]
+
+  @@unique([appId, externalReviewId])
+  @@index([workspaceId, publishedAt])
+  @@index([appId, rating])
+  @@index([rating])
+  @@index([publishedAt])
+  @@map(name: "reviews")
+}
+
+model ReviewSnapshot {
+  id          String @id @default(cuid())
+  workspaceId String
+  appId       String
+
+  // Analysis metadata
+  status             SnapshotStatus
+  analysisDate       DateTime       @map(name: "analysis_date")
+  analysisRangeStart DateTime?      @map(name: "analysis_range_start")
+  analysisRangeEnd   DateTime?      @map(name: "analysis_range_end")
+
+  // Review counts
+  totalReviewsAnalyzed Int @map(name: "total_reviews_analyzed")
+  positiveCount        Int @default(0) @map(name: "positive_count")
+  neutralCount         Int @default(0) @map(name: "neutral_count")
+  negativeCount        Int @default(0) @map(name: "negative_count")
+
+  // Aggregated ratings
+  averageRating    Decimal? @map(name: "average_rating") @db.Decimal(3, 2)
+  medianRating     Int?     @map(name: "median_rating")
+  lowRatingsCount  Int?     @map(name: "low_ratings_count")
+  highRatingsCount Int?     @map(name: "high_ratings_count")
+
+  // Trend information
+  recentTrend     String?  @map(name: "recent_trend") // "improving", "declining", "stable"
+  recentAvgRating Decimal? @map(name: "recent_avg_rating") @db.Decimal(3, 2)
+
+  // Cost tracking
+  promptTokens     Int? @map(name: "prompt_tokens")
+  completionTokens Int? @map(name: "completion_tokens")
+  costInCents      Int? @map(name: "cost_in_cents")
+
+  // Error handling
+  errorMessage String? @map(name: "error_message") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+
+  // Relations
+  workspace          Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  app                App                     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  ratingDistribution RatingDistribution?
+  monthlyTrends      MonthlyTrend[]
+  insights           ReviewSnapshotInsight[]
+  positiveAspects    PositiveAspect[]
+  llmInsight         LLMInsight?
+
+  @@index([workspaceId, appId, analysisDate])
+  @@index([status])
+  @@index([analysisDate])
+  @@map(name: "review_snapshots")
+}
+
+model RatingDistribution {
+  id               String @id @default(cuid())
+  reviewSnapshotId String @unique
+
+  // Distribution by star rating
+  oneStar      Int @default(0) @map(name: "one_star")
+  twoStar      Int @default(0) @map(name: "two_star")
+  threeStar    Int @default(0) @map(name: "three_star")
+  fourStar     Int @default(0) @map(name: "four_star")
+  fiveStar     Int @default(0) @map(name: "five_star")
+  totalReviews Int @map(name: "total_reviews")
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
+
+  @@map(name: "rating_distributions")
+}
+
+model MonthlyTrend {
+  id               String @id @default(cuid())
+  reviewSnapshotId String
+
+  // Trend data
+  month         String // Format: "YYYY-MM"
+  reviewCount   Int     @map(name: "review_count")
+  averageRating Decimal @map(name: "average_rating") @db.Decimal(3, 2)
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewSnapshotId, month])
+  @@index([month])
+  @@map(name: "monthly_trends")
+}
+
+model ReviewSnapshotInsight {
+  id               String @id @default(cuid())
+  reviewSnapshotId String
+  workspaceId      String
+
+  // Insight classification
+  type     InsightType
+  category InsightCategory? // Only for issues/complaints
+  priority InsightPriority  @default(MEDIUM)
+
+  // Insight content
+  title        String?
+  description  String? @db.Text
+  mentionCount Int     @default(0) @map(name: "mention_count")
+
+  // Theme tracking
+  themeKey String? @map(name: "theme_key") // Normalized slug (e.g., "sync_data")
+
+  // For seed data (prototype has excerpts, not IDs)
+  rawExcerpt String? @map(name: "raw_excerpt") @db.Text
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  reviewSnapshot ReviewSnapshot      @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reviewLinks    ReviewInsightLink[]
+
+  @@index([reviewSnapshotId, type, category])
+  @@index([workspaceId, category])
+  @@index([type])
+  @@map(name: "review_snapshot_insights")
+}
+
+model ReviewInsightLink {
+  id        String @id @default(cuid())
+  insightId String
+  reviewId  String
+
+  // Optional relevance scoring for ranking
+  relevanceScore Float? @map(name: "relevance_score")
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  insight ReviewSnapshotInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  review  Review                @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([insightId, reviewId])
+  @@index([reviewId])
+  @@index([insightId])
+  @@map(name: "review_insight_links")
+}
+
+model PositiveAspect {
+  id               String @id @default(cuid())
+  reviewSnapshotId String
+
+  // Positive theme
+  aspect       String
+  mentionCount Int    @map(name: "mention_count")
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewSnapshotId, aspect])
+  @@map(name: "positive_aspects")
+}
+
+model LLMInsight {
+  id               String @id @default(cuid())
+  reviewSnapshotId String @unique
+
+  // LLM-generated insights (stored as JSON)
+  complaints      Json? // Array of {complaint: string, count: number}
+  featureRequests Json?   @map(name: "feature_requests") // Array of {request: string, count: number}
+  mainOpportunity String? @map(name: "main_opportunity") @db.Text
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+
+  // Relations
+  reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
+
+  @@map(name: "llm_insights")
 }
