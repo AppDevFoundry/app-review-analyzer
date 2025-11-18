@@ -21,6 +21,9 @@ interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
 
 type FormData = z.infer<typeof userAuthSchema>;
 
+// Check if we're in development mode (client-side check)
+const isDevelopment = process.env.NODE_ENV === "development";
+
 export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   const {
     register,
@@ -31,7 +34,33 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   });
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
+  const [isTestLoading, setIsTestLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
+
+  // Test login handler for development
+  async function handleTestLogin() {
+    setIsTestLoading(true);
+    try {
+      const result = await signIn("test-credentials", {
+        email: "demo@example.com",
+        password: "test",
+        redirect: false,
+        callbackUrl: searchParams?.get("from") || "/dashboard",
+      });
+
+      if (result?.error) {
+        toast.error("Test login failed", {
+          description: result.error,
+        });
+      } else if (result?.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      toast.error("Test login failed");
+    } finally {
+      setIsTestLoading(false);
+    }
+  }
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
@@ -113,6 +142,38 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
         )}{" "}
         Google
       </button>
+
+      {/* Test login for development only */}
+      {isDevelopment && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-dashed border-orange-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-orange-500">
+                Dev Only
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+            )}
+            onClick={handleTestLogin}
+            disabled={isLoading || isGoogleLoading || isTestLoading}
+          >
+            {isTestLoading ? (
+              <Icons.spinner className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Icons.user className="mr-2 size-4" />
+            )}{" "}
+            Test Login (demo@example.com)
+          </button>
+        </>
+      )}
     </div>
   );
 }

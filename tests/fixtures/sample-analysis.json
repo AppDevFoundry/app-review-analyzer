@@ -1,0 +1,122 @@
+{
+  "app_id": "1570489264",
+  "analysis_date": "2025-08-04T21:13:50.246233",
+  "total_reviews_analyzed": 739,
+  "ratings": {
+    "distribution": {
+      "1": 62,
+      "2": 37,
+      "3": 78,
+      "4": 102,
+      "5": 460
+    },
+    "total_reviews": 739,
+    "average_rating": 4.17,
+    "median_rating": 5,
+    "low_ratings_count": 177,
+    "high_ratings_count": 562
+  },
+  "trends": {
+    "monthly_trends": {
+      "2024-09": { "count": 6, "avg_rating": 4.17 },
+      "2024-10": { "count": 6, "avg_rating": 4.0 },
+      "2024-11": { "count": 24, "avg_rating": 3.67 },
+      "2024-12": { "count": 55, "avg_rating": 3.33 },
+      "2025-01": { "count": 162, "avg_rating": 4.09 },
+      "2025-02": { "count": 20, "avg_rating": 3.75 },
+      "2025-03": { "count": 25, "avg_rating": 4.12 },
+      "2025-04": { "count": 33, "avg_rating": 3.48 },
+      "2025-05": { "count": 47, "avg_rating": 4.57 },
+      "2025-06": { "count": 18, "avg_rating": 4.06 },
+      "2025-07": { "count": 22, "avg_rating": 4.09 },
+      "2025-08": { "count": 1, "avg_rating": 5.0 }
+    },
+    "recent_trend": "improving",
+    "recent_avg_rating": 4.38
+  },
+  "issues": {
+    "issue_categories": {
+      "features": {
+        "count": 89,
+        "examples": [
+          {
+            "rating": "3",
+            "excerpt": "There's a ton of potential to be better than Goodreads..."
+          }
+        ]
+      },
+      "ui_ux": {
+        "count": 45,
+        "examples": [
+          {
+            "rating": "2",
+            "excerpt": "The interface is confusing, and certain pages can only be accessed by several clicks..."
+          }
+        ]
+      },
+      "sync_data": {
+        "count": 17,
+        "examples": [
+          {
+            "rating": "2",
+            "excerpt": "I'm always logged out, and it's gotten to the point where I'm thinking of switching..."
+          }
+        ]
+      },
+      "crashes_bugs": {
+        "count": 75,
+        "examples": [
+          {
+            "rating": "1",
+            "excerpt": "The app is so buggy it would not even allow me to contact the developer..."
+          }
+        ]
+      },
+      "performance": {
+        "count": 39,
+        "examples": [
+          {
+            "rating": "1",
+            "excerpt": "Every time the user navigates anywhere in the app, a new page is pushed onto the navigation stack..."
+          }
+        ]
+      }
+    },
+    "total_issues_found": 334,
+    "feature_requests_count": 78,
+    "feature_request_samples": [
+      {
+        "rating": "4",
+        "excerpt": "I love the functionality but it could benefit from more photogenic layouts like letterboxd..."
+      },
+      {
+        "rating": "5",
+        "excerpt": "I've suggested a few book-to-movie and movie-to-book connections that would be awesome..."
+      }
+    ]
+  },
+  "positives": {
+    "top_positive_aspects": {
+      "features": 475,
+      "stats_analytics": 393,
+      "organization": 315,
+      "recommendations": 187,
+      "community": 131
+    },
+    "total_positive_reviews": 562
+  },
+  "llm_insights": {
+    "complaints": [
+      { "complaint": "User interface and experience (UI/UX) issues", "count": 10 },
+      { "complaint": "Buggy and unreliable app functionality", "count": 5 },
+      { "complaint": "Difficulty in navigation and user flow", "count": 4 }
+    ],
+    "feature_requests": [
+      { "request": "Enhanced integration with Kindle", "count": 2 },
+      { "request": "Improved book edition handling", "count": 2 },
+      { "request": "Better search functionality and auto-complete", "count": 3 }
+    ],
+    "main_opportunity": "Improving the user interface and experience (UI/UX) to make navigation more intuitive and overall use smoother, while also addressing bugs and ensuring reliable app functionality."
+  },
+  "app_name": "The StoryGraph"
+}

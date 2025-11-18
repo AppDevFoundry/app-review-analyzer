@@ -54,16 +54,95 @@ pnpm install
 cp .env.example .env.local
 ```
 
-3. Start the development server:
+3. Run database migrations:
+
+```sh
+npx prisma migrate dev
+```
+
+4. (Optional) Seed the database with sample data:
+
+```sh
+npx prisma db seed
+```
+
+5. Start the development server:
 
 ```sh
 pnpm run dev
 ```
 
-> [!NOTE]  
+> [!NOTE]
 > I use [npm-check-updates](https://www.npmjs.com/package/npm-check-updates) package for update this project.
 >
 > Use this command for update your project: `ncu -i --format group`
+
+## Database
+
+The application uses PostgreSQL (Neon) with Prisma ORM. The data model supports multi-tenant workspaces with plan-based limits.
+
+### Schema Overview
+
+| Model | Description |
+|-------|-------------|
+| `User` | Authenticated users (Auth.js) |
+| `Workspace` | Team/organization container with plan limits |
+| `WorkspaceMember` | User-workspace membership with roles |
+| `App` | Tracked iOS App Store applications |
+| `Review` | Individual app store reviews |
+| `ReviewSnapshot` | Point-in-time analysis runs |
+| `ReviewSnapshotInsight` | Normalized insights from analysis |
+
+### Database Commands
+
+```sh
+# Apply migrations (development)
+npx prisma migrate dev
+
+# Apply migrations (production)
+npx prisma migrate deploy
+
+# Generate Prisma client after schema changes
+npx prisma generate
+
+# Open Prisma Studio (database GUI)
+npx prisma studio
+
+# Seed database with sample data
+npx prisma db seed
+
+# Reset database (drops all data)
+npx prisma migrate reset
+```
+
+### Seed Data
+
+The seed script (`prisma/seed.ts`) populates the database with:
+- Demo user (`demo@example.com`)
+- Demo workspace with STARTER plan
+- The StoryGraph app (App Store ID: 1570489264)
+- Sample reviews and analysis from prototype data
+
+Custom data paths can be specified via environment variables:
+```sh
+SEED_ANALYSIS_PATH=/path/to/analysis.json npx prisma db seed
+SEED_REVIEWS_PATH=/path/to/reviews.json npx prisma db seed
+```
+
+### Testing
+
+```sh
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+For database integration tests, create `.env.test` from `.env.test.example` and configure `DATABASE_URL_TEST` to point to a test database
 
 ## Roadmap
 
@@ -106,6 +185,7 @@ See [PROJECT_OVERVIEW_AND_ROADMAP.md](PROJECT_OVERVIEW_AND_ROADMAP.md) for detai
 ### Code Quality
 
 - [TypeScript](https://www.typescriptlang.org/) – Static type checker for end-to-end typesafety
+- [Vitest](https://vitest.dev/) – Fast unit test framework powered by Vite
 - [Prettier](https://prettier.io/) – Opinionated code formatter for consistent code style
 - [ESLint](https://eslint.org/) – Pluggable linter for Next.js and TypeScript
 

@@ -20,6 +20,16 @@ const nextConfig = {
         protocol: "https",
         hostname: "randomuser.me",
       },
+      // Apple App Store CDN for app icons
+      {
+        protocol: "https",
+        hostname: "*.mzstatic.com",
+      },
+      // Placeholder images for mock mode
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
     ],
   },
   experimental: {

@@ -2,7 +2,7 @@ You are an expert level backend API developer and database modeler/engineer with
 
 # Task 1 – Core Data Layer & Prisma Migration
 
-Related roadmap: `PROJECT_OVERVIEW_AND_ROADMAP.md` §6 “Phase 1 – MVP” (lines 210‑251)
+Related roadmap: @PROJECT_OVERVIEW_AND_ROADMAP.md §6 “Phase 1 – MVP” (lines 210‑251)
 
 ## 1. Why this matters
 - Phase 1 requires App, Review, and ReviewSnapshot entities, workspace scoping, and plan gating before we can ship any UI or ingestion flows. (Roadmap lines 216‑249)
