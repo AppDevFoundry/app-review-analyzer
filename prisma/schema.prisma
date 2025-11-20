@@ -25,6 +25,7 @@ enum WorkspaceRole {
   OWNER
   ADMIN
   MEMBER
+  VIEWER
 }
 
 enum AppPlatform {
@@ -213,14 +214,16 @@ model App {
   platform   AppPlatform
   appStoreId String // Apple numeric ID (e.g., "1570489264")
   bundleId   String?
+  country    String      @default("us") // Market/region (e.g., "us", "gb")
 
   // App metadata
-  name            String
-  slug            String
-  developerName   String?
-  primaryCategory String?
-  iconUrl         String?
-  storeUrl        String?
+  name         String
+  slug         String
+  nickname     String? // User's custom label for this app
+  developerName String?
+  category     String? // App category/genre (e.g., "Books", "Productivity")
+  iconUrl      String?
+  storeUrl     String?
 
   // Ratings info (cached from App Store)
   averageRating Decimal? @db.Decimal(3, 2)
@@ -231,8 +234,9 @@ model App {
   lastSyncedAt DateTime? @map(name: "last_synced_at")
 
   // Timestamps
-  createdAt DateTime @default(now()) @map(name: "created_at")
-  updatedAt DateTime @updatedAt @map(name: "updated_at")
+  createdAt DateTime  @default(now()) @map(name: "created_at")
+  updatedAt DateTime  @updatedAt @map(name: "updated_at")
+  deletedAt DateTime? @map(name: "deleted_at")
 
   // Relations
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -241,6 +245,7 @@ model App {
 
   @@unique([workspaceId, appStoreId])
   @@index([workspaceId, status])
+  @@index([workspaceId, deletedAt])
   @@index([platform, appStoreId])
   @@map(name: "apps")
 }

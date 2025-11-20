@@ -119,6 +119,78 @@ The seed script (`prisma/seed.ts`) creates:
 
 All seed data is sourced from `prototype/review-analyzer/` JSON files.
 
+## Managing Apps
+
+### Adding Apps to Your Workspace
+
+The application allows you to track iOS apps from the Apple App Store. Here's how to add apps:
+
+1. **Navigate to Apps Page**
+   - Go to `/dashboard/apps` after logging in
+   - Click the "Add App" button in the header
+
+2. **Enter App Store URL or ID**
+   - Provide a full App Store URL (e.g., `https://apps.apple.com/us/app/myapp/id1234567890`)
+   - Or just the numeric app ID (e.g., `1234567890`)
+
+3. **Optional Fields**
+   - **Nickname**: Add a custom label to help identify the app (e.g., "Competitor A")
+   - **Country/Region**: Select the App Store market (default: United States)
+
+4. **Plan Limits**
+   - The system enforces plan-based limits on the number of apps you can track
+   - **Starter**: 1 app
+   - **Pro**: 10 apps
+   - **Business**: 50 apps
+   - You'll see your current usage displayed in the dialog
+
+### Supported URL Formats
+
+The app parser accepts various App Store URL formats:
+
+```
+# Full US URL
+https://apps.apple.com/us/app/storygraph/id1570489264
+
+# Localized URLs
+https://apps.apple.com/gb/app/storygraph/id1570489264
+https://apps.apple.com/jp/app/storygraph/id1570489264
+
+# Short URLs
+https://apps.apple.com/app/id1570489264
+
+# Numeric ID only
+1570489264
+```
+
+### Managing Existing Apps
+
+**Pause/Resume Tracking:**
+- Click the actions menu (three dots) next to any app
+- Select "Pause" to temporarily stop review fetching
+- Select "Resume" to re-enable tracking
+- Paused apps don't count toward analysis limits
+
+**Delete Apps:**
+- Only workspace Owners and Admins can delete apps
+- Click the actions menu → "Delete"
+- Type the app name to confirm (safety measure)
+- Deletion is soft by default - data is archived, not permanently removed
+- This frees up a slot in your plan
+
+**View Details:**
+- Click on any app row in the table to view detailed analytics
+- Or use the actions menu → "View Details"
+
+### Permissions & Roles
+
+The workspace uses role-based access control (RBAC):
+
+- **Owner**: Full access - can manage workspace, billing, and all apps
+- **Admin**: Can manage apps and members, but not workspace settings or billing
+- **Member**: Can add, pause, and view apps
+- **Viewer**: Read-only access to apps and insights
+
 ## Testing
 
 ### Running Tests
