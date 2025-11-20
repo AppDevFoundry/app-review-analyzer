@@ -1,16 +1,20 @@
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import Link from "next/link"
-import { ChevronLeft, Star, Calendar, MessageSquare, TrendingUp } from "lucide-react"
+import { ChevronLeft, Star, Calendar, MessageSquare, TrendingUp, Download } from "lucide-react"
 import { formatDistanceToNow, format } from "date-fns"
 
 import { getAppDetails, getAppReviews, getAppInsights } from "@/app/actions/apps"
+import { getIngestionRuns } from "@/app/actions/reviews"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+
+import { FetchReviewsButton } from "./components/fetch-reviews-button"
+import { IngestionHistory } from "./components/ingestion-history"
 
 interface AppDetailsPageProps {
   params: {
@@ -20,11 +24,13 @@ interface AppDetailsPageProps {
 
 export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
   // Fetch all data in parallel
-  const [appResult, reviewsResult, insightsResult] = await Promise.all([
-    getAppDetails(params.id),
-    getAppReviews(params.id, { limit: 100 }),
-    getAppInsights(params.id),
-  ])
+  const [appResult, reviewsResult, insightsResult, ingestionRunsResult] =
+    await Promise.all([
+      getAppDetails(params.id),
+      getAppReviews(params.id, { limit: 100 }),
+      getAppInsights(params.id),
+      getIngestionRuns(params.id, { limit: 10 }),
+    ])
 
   if (!appResult.success || !appResult.data) {
     notFound()
@@ -33,6 +39,9 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
   const app = appResult.data
   const reviews = reviewsResult.success ? reviewsResult.data : []
   const insights = insightsResult.success ? insightsResult.data : null
+  const ingestionRuns = ingestionRunsResult.success
+    ? ingestionRunsResult.data.runs
+    : []
 
   // Calculate rating distribution from reviews
   const ratingCounts = reviews.reduce((acc, review) => {
@@ -80,6 +89,16 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
             </div>
           </div>
         </div>
+        <FetchReviewsButton
+          appId={app.id}
+          appName={app.name}
+          disabled={app.status !== "ACTIVE"}
+          disabledReason={
+            app.status !== "ACTIVE"
+              ? `Cannot fetch reviews for ${app.status.toLowerCase()} apps`
+              : undefined
+          }
+        />
       </div>
 
       {/* Stats Cards */}
@@ -136,6 +155,9 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
           </TabsTrigger>
           <TabsTrigger value="insights">
             Insights {insights?.insights?.length ? `(${insights.insights.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="ingestion">
+            Ingestion History ({ingestionRuns.length})
           </TabsTrigger>
           <TabsTrigger value="history">
             Analysis History ({app._count.reviewSnapshots})
@@ -328,6 +350,11 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Ingestion History Tab */}
+        <TabsContent value="ingestion" className="space-y-4">
+          <IngestionHistory runs={ingestionRuns} />
         </TabsContent>
 
         {/* Analysis History Tab */}
