@@ -107,11 +107,21 @@ class RateLimiter {
 }
 
 /**
- * Rate limiter for Apple API calls
+ * Rate limiter for Apple iTunes Lookup API calls
  * Limit: 10 calls per minute per workspace
  */
 export const appleApiLimiter = new RateLimiter(
   10, // max requests
+  60 * 1000 // 1 minute window
+)
+
+/**
+ * Rate limiter for Apple RSS Reviews API
+ * Higher limit since review fetching requires multiple page requests
+ * Limit: 30 calls per minute per workspace
+ */
+export const appleReviewsLimiter = new RateLimiter(
+  30, // max requests (allows ~10 pages per source)
   60 * 1000 // 1 minute window
 )
 
@@ -130,12 +140,37 @@ export function canCallAppleApi(workspaceId: string): boolean {
 }
 
 /**
- * Get rate limit info for a workspace
+ * Check if Apple Reviews RSS call is allowed for a workspace
+ * @param workspaceId - Workspace identifier
+ * @returns true if allowed, false if rate limited
+ */
+export function canCallAppleReviewsApi(workspaceId: string): boolean {
+  // Skip rate limiting in test/dev environments
+  if (process.env.NODE_ENV === "test" || process.env.MOCK_APPLE_API === "true") {
+    return true
+  }
+
+  return appleReviewsLimiter.check(workspaceId)
+}
+
+/**
+ * Get rate limit info for a workspace (iTunes Lookup API)
  */
 export function getAppleApiLimitInfo(workspaceId: string) {
   return {
     remaining: appleApiLimiter.remaining(workspaceId),
     resetIn: appleApiLimiter.resetIn(workspaceId),
     resetAt: new Date(Date.now() + appleApiLimiter.resetIn(workspaceId)),
+  }
+}
+
+/**
+ * Get rate limit info for a workspace (Reviews RSS API)
+ */
+export function getAppleReviewsLimitInfo(workspaceId: string) {
+  return {
+    remaining: appleReviewsLimiter.remaining(workspaceId),
+    resetIn: appleReviewsLimiter.resetIn(workspaceId),
+    resetAt: new Date(Date.now() + appleReviewsLimiter.resetIn(workspaceId)),
   }
 }

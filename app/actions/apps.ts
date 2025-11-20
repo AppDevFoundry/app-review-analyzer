@@ -182,7 +182,7 @@ export async function createApp(
         storeUrl: metadata.storeUrl,
         status: AppStatus.ACTIVE,
         platform: "IOS", // Currently only iOS apps supported
-        category: metadata.primaryCategory,
+        primaryCategory: metadata.primaryCategory,
         averageRating: metadata.averageRating,
         ratingCount: metadata.ratingCount,
         country: metadata.country,
@@ -257,7 +257,7 @@ export async function getApps(
         iconUrl: true,
         storeUrl: true,
         status: true,
-        category: true,
+        primaryCategory: true,
         averageRating: true,
         ratingCount: true,
         lastSyncedAt: true,

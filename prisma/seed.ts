@@ -96,31 +96,31 @@ const SAMPLE_APPS = [
     appStoreId: "1570489264",
     name: "StoryGraph",
     developerName: "StoryGraph",
-    category: "Books",
+    primaryCategory: "Books",
   },
   {
     appStoreId: "310633997",
     name: "WhatsApp Messenger",
     developerName: "WhatsApp Inc.",
-    category: "Social Networking",
+    primaryCategory: "Social Networking",
   },
   {
     appStoreId: "389801252",
     name: "Instagram",
     developerName: "Instagram, Inc.",
-    category: "Photo & Video",
+    primaryCategory: "Photo & Video",
   },
   {
     appStoreId: "544007664",
     name: "YouTube",
     developerName: "Google LLC",
-    category: "Photo & Video",
+    primaryCategory: "Photo & Video",
   },
   {
     appStoreId: "1482920575",
     name: "Duolingo",
     developerName: "Duolingo",
-    category: "Education",
+    primaryCategory: "Education",
   },
 ]
 
@@ -217,7 +217,7 @@ async function createSimpleApp(
   appStoreId: string,
   name: string,
   developerName: string,
-  category: string
+  primaryCategory: string
 ) {
   const existing = await prisma.app.findFirst({
     where: { workspaceId, appStoreId },
@@ -235,7 +235,7 @@ async function createSimpleApp(
       name,
       slug: generateSlug(name),
       developerName,
-      category,
+      primaryCategory,
       status: AppStatus.ACTIVE,
     },
   })
@@ -294,7 +294,7 @@ async function main() {
           appData.appStoreId,
           appData.name,
           appData.developerName,
-          appData.category
+          appData.primaryCategory
         )
       }
       console.log(`✅ Created ${config.appsToCreate} app(s)`)

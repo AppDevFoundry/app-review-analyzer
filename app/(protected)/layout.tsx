@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { sidebarLinks } from "@/config/dashboard";
 import { getCurrentUser } from "@/lib/session";
+import { isSuperAdmin } from "@/lib/permissions";
 import { SearchCommand } from "@/components/dashboard/search-command";
 import {
   DashboardSidebar,
@@ -20,12 +21,32 @@ export default async function Dashboard({ children }: ProtectedLayoutProps) {
 
   if (!user) redirect("/login");
 
-  const filteredLinks = sidebarLinks.map((section) => ({
-    ...section,
-    items: section.items.filter(
+  // Check if user is super admin
+  const isSuper = isSuperAdmin(user.email);
+
+  // Filter links based on user role and add super admin links
+  const filteredLinks = sidebarLinks.map((section) => {
+    let items = section.items.filter(
       ({ authorizeOnly }) => !authorizeOnly || authorizeOnly === user.role,
-    ),
-  }));
+    );
+
+    // Add super admin health dashboard link to MENU section
+    if (isSuper && section.title === "MENU") {
+      items = [
+        {
+          href: "/admin/health",
+          icon: "activity",
+          title: "System Health",
+        },
+        ...items,
+      ];
+    }
+
+    return {
+      ...section,
+      items,
+    };
+  });
 
   return (
     <div className="relative flex min-h-screen w-full">
