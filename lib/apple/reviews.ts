@@ -43,7 +43,7 @@ export interface NormalizedReview {
  */
 interface AppleRSSEntry {
   id: {
-    label: string // Format: "https://itunes.apple.com/rss/customerreviews/id=REVIEWID/json"
+    label: string // Format: Just the numeric review ID, e.g., "12048133676"
   }
   author: {
     name?: { label?: string }
@@ -225,6 +225,13 @@ async function fetchFromSource(options: {
     }
 
     const url = buildAppleRSSUrl({ appStoreId, country, sortBy, page: currentPage })
+    console.log(`[Apple Reviews] Fetching from Apple RSS API:`, {
+      appStoreId,
+      country,
+      sortBy,
+      page: currentPage,
+      url,
+    })
 
     try {
       const response = await fetchWithRetry(url)
@@ -233,6 +240,12 @@ async function fetchFromSource(options: {
         sortBy,
         country
       )
+
+      console.log(`[Apple Reviews] Page ${currentPage} results:`, {
+        reviewsOnPage: pageReviews.length,
+        totalSoFar: reviews.length + pageReviews.length,
+        hasNextPage: !!nextPageUrl,
+      })
 
       reviews.push(...pageReviews)
 
@@ -276,6 +289,13 @@ async function fetchWithRetry(
 
     clearTimeout(timeout)
 
+    console.log(`[Apple Reviews] HTTP response:`, {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      url: url.substring(0, 100) + "...",
+    })
+
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error(`App not found: ${response.status}`)
@@ -287,6 +307,13 @@ async function fetchWithRetry(
     }
 
     const data = await response.json()
+    console.log(`[Apple Reviews] Response structure:`, {
+      hasFeed: !!data.feed,
+      hasEntry: !!data.feed?.entry,
+      entryCount: data.feed?.entry?.length || 0,
+      hasLink: !!data.feed?.link,
+      linkCount: data.feed?.link?.length || 0,
+    })
     return data as AppleRSSFeed
   } catch (error) {
     // Retry on network errors, timeouts, or 5xx errors
@@ -311,6 +338,18 @@ export function parseAppleRSSResponse(
 ): { reviews: NormalizedReview[]; nextPageUrl: string | null } {
   const reviews: NormalizedReview[] = []
   const entries = response.feed?.entry || []
+
+  console.log(`[Apple Reviews] Parsing RSS response:`, {
+    source,
+    country,
+    totalEntries: entries.length,
+    feedStructure: {
+      hasFeed: !!response.feed,
+      hasAuthor: !!response.feed?.author,
+      hasLink: !!response.feed?.link,
+      linkTypes: response.feed?.link?.map(l => l.attributes?.rel).filter(Boolean),
+    },
+  })
 
   for (const entry of entries) {
     try {
@@ -339,13 +378,15 @@ function normalizeAppleEntry(
   country: string
 ): NormalizedReview | null {
   // Extract review ID from the entry.id.label
-  // Format: "https://itunes.apple.com/rss/customerreviews/id=REVIEWID/json"
-  const idMatch = entry.id?.label?.match(/id=(\d+)/)
-  if (!idMatch) {
+  // Apple's actual format is just a numeric string like "12048133676"
+  const externalReviewId = entry.id?.label
+  if (!externalReviewId || !/^\d+$/.test(externalReviewId)) {
+    console.log("[Apple Reviews] Invalid or missing review ID:", {
+      entryId: entry.id?.label,
+      hasRating: !!entry["im:rating"]?.label,
+    })
     return null
   }
-
-  const externalReviewId = idMatch[1]
 
   // Parse rating (1-5)
   const rating = parseInt(entry["im:rating"]?.label || "0", 10)

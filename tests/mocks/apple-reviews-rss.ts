@@ -5,7 +5,7 @@
  */
 
 export interface MockRSSEntry {
-  id: string
+  id: string // Numeric review ID, e.g., "12048133676"
   author: { name: string; uri?: string }
   title: string
   content: { type: string; label: string }
@@ -44,7 +44,7 @@ export function generateMockRSSFeed(
   for (let i = 0; i < entryCount; i++) {
     const reviewNum = (page - 1) * 50 + i + 1
     entries.push({
-      id: `https://itunes.apple.com/review/${appStoreId}-${reviewNum}`,
+      id: `${1200000000 + reviewNum}`, // Numeric ID like Apple's real format
       author: {
         name: `User${reviewNum}`,
         uri: `https://itunes.apple.com/user/id${reviewNum}`,
