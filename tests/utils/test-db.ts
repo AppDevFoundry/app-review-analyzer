@@ -50,7 +50,7 @@ export async function cleanDatabase(prisma: PrismaClient) {
   // Delete in reverse order of dependencies to avoid foreign key constraints
   await prisma.reviewInsightLink.deleteMany()
   await prisma.reviewSnapshotInsight.deleteMany()
-  await prisma.llmInsight.deleteMany()
+  await prisma.lLMInsight.deleteMany()
   await prisma.positiveAspect.deleteMany()
   await prisma.monthlyTrend.deleteMany()
   await prisma.ratingDistribution.deleteMany()
