@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Star } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { WorkspaceRole } from "@prisma/client"
 import {
   Table,
   TableBody,
@@ -13,12 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { AppActionButtons } from "./app-action-buttons"
 
 interface AppTableProps {
   apps: any[]
+  userRole: WorkspaceRole
 }
 
-export function AppTable({ apps }: AppTableProps) {
+export function AppTable({ apps, userRole }: AppTableProps) {
   const router = useRouter()
 
   return (
@@ -32,6 +35,9 @@ export function AppTable({ apps }: AppTableProps) {
             <TableHead>Reviews</TableHead>
             <TableHead>Analyses</TableHead>
             <TableHead className="text-right">Last Analyzed</TableHead>
+            <TableHead className="w-[70px]">
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -51,7 +57,7 @@ export function AppTable({ apps }: AppTableProps) {
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="font-medium">{app.name}</span>
-                    <span className="text-sm text-muted-foreground">{app.primaryCategory || 'Uncategorized'}</span>
+                    <span className="text-sm text-muted-foreground">{app.category || 'Uncategorized'}</span>
                   </div>
                 </div>
               </TableCell>
@@ -87,6 +93,14 @@ export function AppTable({ apps }: AppTableProps) {
                       addSuffix: true,
                     })
                   : "Never"}
+              </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <AppActionButtons
+                  appId={app.id}
+                  appName={app.name}
+                  appStatus={app.status}
+                  userRole={userRole}
+                />
               </TableCell>
             </TableRow>
           ))}

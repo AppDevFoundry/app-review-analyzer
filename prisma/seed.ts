@@ -27,6 +27,104 @@ import { PLAN_LIMITS } from "../config/plan-limits"
 const prisma = new PrismaClient()
 
 /**
+ * Test user configurations for different scenarios
+ */
+const TEST_USERS = [
+  {
+    email: "owner@starter.dev",
+    name: "Owner (Starter - Empty)",
+    plan: WorkspacePlan.STARTER,
+    role: WorkspaceRole.OWNER,
+    appsToCreate: 0, // Empty workspace
+    description: "STARTER plan with no apps - test adding first app",
+  },
+  {
+    email: "owner@starter-limit.dev",
+    name: "Owner (Starter - At Limit)",
+    plan: WorkspacePlan.STARTER,
+    role: WorkspaceRole.OWNER,
+    appsToCreate: 1, // At limit (1/1)
+    description: "STARTER plan at limit - test limit enforcement",
+  },
+  {
+    email: "owner@pro.dev",
+    name: "Owner (Pro)",
+    plan: WorkspacePlan.PRO,
+    role: WorkspaceRole.OWNER,
+    appsToCreate: 3, // Room to add more (3/10)
+    description: "PRO plan with room - test normal operations",
+  },
+  {
+    email: "owner@business.dev",
+    name: "Owner (Business)",
+    plan: WorkspacePlan.BUSINESS,
+    role: WorkspaceRole.OWNER,
+    appsToCreate: 5, // Plenty of room (5/50)
+    description: "BUSINESS plan - test large-scale operations",
+  },
+  {
+    email: "admin@pro.dev",
+    name: "Admin (Pro)",
+    plan: WorkspacePlan.PRO,
+    role: WorkspaceRole.ADMIN,
+    appsToCreate: 2, // Some apps (2/10)
+    description: "ADMIN role - test admin permissions",
+  },
+  {
+    email: "member@pro.dev",
+    name: "Member (Pro)",
+    plan: WorkspacePlan.PRO,
+    role: WorkspaceRole.MEMBER,
+    appsToCreate: 2, // Some apps (2/10)
+    description: "MEMBER role - test member permissions",
+  },
+  {
+    email: "viewer@pro.dev",
+    name: "Viewer (Pro)",
+    plan: WorkspacePlan.PRO,
+    role: WorkspaceRole.VIEWER,
+    appsToCreate: 2, // Some apps to view (2/10)
+    description: "VIEWER role - test read-only access",
+  },
+] as const
+
+/**
+ * Sample apps for test users (simple metadata only)
+ */
+const SAMPLE_APPS = [
+  {
+    appStoreId: "1570489264",
+    name: "StoryGraph",
+    developerName: "StoryGraph",
+    category: "Books",
+  },
+  {
+    appStoreId: "310633997",
+    name: "WhatsApp Messenger",
+    developerName: "WhatsApp Inc.",
+    category: "Social Networking",
+  },
+  {
+    appStoreId: "389801252",
+    name: "Instagram",
+    developerName: "Instagram, Inc.",
+    category: "Photo & Video",
+  },
+  {
+    appStoreId: "544007664",
+    name: "YouTube",
+    developerName: "Google LLC",
+    category: "Photo & Video",
+  },
+  {
+    appStoreId: "1482920575",
+    name: "Duolingo",
+    developerName: "Duolingo",
+    category: "Education",
+  },
+]
+
+/**
  * Generate a unique slug from a name
  */
 function generateSlug(name: string): string {
@@ -52,38 +150,46 @@ async function ensureUniqueSlug(baseSlug: string): Promise<string> {
 }
 
 /**
- * Get or create a default workspace for the seed user
+ * Create or get a user
  */
-async function getOrCreateDefaultWorkspace(userId: string, userName: string | null) {
-  // Check if user already has a workspace where they're the owner
-  const existingWorkspace = await prisma.workspace.findFirst({
-    where: {
-      ownerId: userId,
-      deletedAt: null,
-    },
-    include: {
-      members: {
-        where: { userId },
-      },
-    },
-  })
+async function getOrCreateUser(email: string, name: string) {
+  let user = await prisma.user.findFirst({ where: { email } })
 
-  if (existingWorkspace) {
-    return existingWorkspace
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        role: UserRole.USER,
+        emailVerified: new Date(),
+      },
+    })
+    console.log(`✅ Created user: ${email}`)
+  } else {
+    console.log(`✅ Found existing user: ${email}`)
   }
 
-  const workspaceName = `${userName || "Personal"}'s Workspace`
+  return user
+}
+
+/**
+ * Create workspace for a test user
+ */
+async function createWorkspaceForUser(
+  userId: string,
+  userName: string,
+  plan: WorkspacePlan,
+  role: WorkspaceRole
+) {
+  const workspaceName = `${userName}'s Workspace`
   const slug = await ensureUniqueSlug(generateSlug(workspaceName))
+  const planLimits = PLAN_LIMITS[plan]
 
-  // Get default plan limits
-  const planLimits = PLAN_LIMITS[WorkspacePlan.STARTER]
-
-  // Create workspace with default plan
   const workspace = await prisma.workspace.create({
     data: {
       name: workspaceName,
       slug,
-      plan: WorkspacePlan.STARTER,
+      plan,
       ownerId: userId,
       appLimit: planLimits.maxApps,
       analysisLimitPerMonth: planLimits.maxAnalysesPerMonth,
@@ -91,7 +197,7 @@ async function getOrCreateDefaultWorkspace(userId: string, userName: string | nu
       members: {
         create: {
           userId,
-          role: WorkspaceRole.OWNER,
+          role,
         },
       },
     },
@@ -104,78 +210,129 @@ async function getOrCreateDefaultWorkspace(userId: string, userName: string | nu
 }
 
 /**
+ * Create simple app for testing
+ */
+async function createSimpleApp(
+  workspaceId: string,
+  appStoreId: string,
+  name: string,
+  developerName: string,
+  category: string
+) {
+  const existing = await prisma.app.findFirst({
+    where: { workspaceId, appStoreId },
+  })
+
+  if (existing) {
+    return existing
+  }
+
+  return prisma.app.create({
+    data: {
+      workspaceId,
+      platform: AppPlatform.IOS,
+      appStoreId,
+      name,
+      slug: generateSlug(name),
+      developerName,
+      category,
+      status: AppStatus.ACTIVE,
+    },
+  })
+}
+
+/**
  * Main seed function
  */
 async function main() {
-  console.log("🌱 Starting database seed...")
+  console.log("🌱 Starting database seed with test user matrix...")
   console.log("")
 
   // ============================================================================
-  // Step 1: Ensure demo user exists
+  // Create all test users with their workspaces and apps
   // ============================================================================
-  console.log("👤 Step 1: Creating/finding demo user...")
+  console.log("👥 Creating test users...")
+  console.log("")
 
-  let demoUser = await prisma.user.findFirst({
-    where: { email: "demo@appanalyzer.dev" },
-  })
+  const createdUsers: Array<{
+    user: any
+    workspace: any
+    config: (typeof TEST_USERS)[number]
+  }> = []
 
-  if (!demoUser) {
-    demoUser = await prisma.user.create({
-      data: {
-        email: "demo@appanalyzer.dev",
-        name: "Demo User",
-        role: UserRole.USER,
-        emailVerified: new Date(),
+  for (const config of TEST_USERS) {
+    console.log(`📋 Setting up: ${config.email}`)
+    console.log(`   ${config.description}`)
+
+    // Create user
+    const user = await getOrCreateUser(config.email, config.name)
+
+    // Check if workspace already exists
+    let workspace = await prisma.workspace.findFirst({
+      where: {
+        members: { some: { userId: user.id } },
       },
+      include: { members: true },
     })
-    console.log(`✅ Created demo user: ${demoUser.email}`)
-  } else {
-    console.log(`✅ Found existing demo user: ${demoUser.email}`)
+
+    if (!workspace) {
+      // Create workspace
+      workspace = await createWorkspaceForUser(user.id, config.name, config.plan, config.role)
+      console.log(`✅ Created workspace: ${workspace.name}`)
+      console.log(`   Plan: ${config.plan} (${workspace.appLimit} apps limit)`)
+      console.log(`   Role: ${config.role}`)
+    } else {
+      console.log(`✅ Found existing workspace: ${workspace.name}`)
+    }
+
+    // Create apps for this user
+    if (config.appsToCreate > 0) {
+      const appsToAdd = SAMPLE_APPS.slice(0, config.appsToCreate)
+      for (const appData of appsToAdd) {
+        await createSimpleApp(
+          workspace.id,
+          appData.appStoreId,
+          appData.name,
+          appData.developerName,
+          appData.category
+        )
+      }
+      console.log(`✅ Created ${config.appsToCreate} app(s)`)
+    } else {
+      console.log(`✅ Workspace empty (0 apps)`)
+    }
+
+    createdUsers.push({ user, workspace, config })
+    console.log("")
   }
-  console.log("")
 
   // ============================================================================
-  // Step 2: Create/find default workspace
+  // Load detailed data for owner@starter-limit.dev (for rich demo experience)
   // ============================================================================
-  console.log("🏢 Step 2: Creating/finding workspace...")
+  const demoUserEntry = createdUsers.find((u) => u.config.email === "owner@starter-limit.dev")
 
-  const workspace = await getOrCreateDefaultWorkspace(demoUser.id, demoUser.name)
-  console.log(`✅ Workspace: ${workspace.name} (${workspace.slug})`)
-  console.log(`   Plan: ${workspace.plan}`)
-  console.log(`   Limits: ${workspace.appLimit} apps, ${workspace.analysisLimitPerMonth} analyses/month`)
-  console.log("")
+  if (!demoUserEntry) {
+    console.log("⚠️  Skipping detailed data load - demo user not found")
+    console.log("")
+  } else {
+    console.log("📊 Loading detailed review data for demo user...")
+    console.log("")
 
-  // ============================================================================
-  // Step 3: Create StoryGraph app
-  // ============================================================================
-  console.log("📱 Step 3: Creating StoryGraph app...")
-
-  const appStoreId = "1570489264"
-  let app = await prisma.app.findFirst({
-    where: {
-      workspaceId: workspace.id,
-      appStoreId,
-    },
-  })
-
-  if (!app) {
-    app = await prisma.app.create({
-      data: {
+    const { workspace } = demoUserEntry
+    const appStoreId = "1570489264"
+    let app = await prisma.app.findFirst({
+      where: {
         workspaceId: workspace.id,
-        platform: AppPlatform.IOS,
         appStoreId,
-        name: "StoryGraph",
-        slug: "storygraph",
-        developerName: "StoryGraph",
-        primaryCategory: "Books",
-        status: AppStatus.ACTIVE,
       },
     })
-    console.log(`✅ Created app: ${app.name} (${app.appStoreId})`)
-  } else {
-    console.log(`✅ Found existing app: ${app.name} (${app.appStoreId})`)
-  }
-  console.log("")
+
+    if (!app) {
+      console.log("⚠️  StoryGraph app not found for demo user, skipping detailed data")
+      console.log("")
+    } else {
+      console.log(`📱 Found app: ${app.name} (${app.appStoreId})`)
+      console.log("")
 
   // ============================================================================
   // Step 4: Ingest raw reviews
@@ -384,29 +541,46 @@ async function main() {
       console.log(`✅ Created ${totalMatches} insight-review links`)
     }
   }
+    }
+  }
 
   console.log("")
   console.log("=" .repeat(60))
   console.log("🎉 Seed completed successfully!")
   console.log("")
-  console.log("Summary:")
-  console.log(`  User: ${demoUser.email}`)
-  console.log(`  Workspace: ${workspace.name}`)
-  console.log(`  App: ${app.name} (${app.appStoreId})`)
-
-  const finalReviewCount = await prisma.review.count({ where: { appId: app.id } })
-  const finalSnapshotCount = await prisma.reviewSnapshot.count({ where: { appId: app.id } })
-  const finalInsightCount = await prisma.reviewSnapshotInsight.count({
-    where: { workspaceId: workspace.id },
-  })
-  const finalLinkCount = await prisma.reviewInsightLink.count()
-
-  console.log(`  Reviews: ${finalReviewCount}`)
-  console.log(`  Snapshots: ${finalSnapshotCount}`)
-  console.log(`  Insights: ${finalInsightCount}`)
-  console.log(`  Insight Links: ${finalLinkCount}`)
+  console.log("📊 Test User Matrix Summary:")
   console.log("")
-  console.log("You can now explore the data with: npx prisma studio")
+
+  for (const { user, workspace, config } of createdUsers) {
+    const appCount = await prisma.app.count({
+      where: { workspaceId: workspace.id, deletedAt: null },
+    })
+    console.log(`  ${user.email}`)
+    console.log(`    Name: ${user.name}`)
+    console.log(`    Plan: ${config.plan} (${workspace.appLimit} apps limit)`)
+    console.log(`    Role: ${config.role}`)
+    console.log(`    Apps: ${appCount}/${workspace.appLimit}`)
+    console.log(`    Use case: ${config.description}`)
+    console.log("")
+  }
+
+  const totalUsers = await prisma.user.count()
+  const totalWorkspaces = await prisma.workspace.count()
+  const totalApps = await prisma.app.count({ where: { deletedAt: null } })
+  const totalReviews = await prisma.review.count()
+  const totalSnapshots = await prisma.reviewSnapshot.count()
+
+  console.log("Database Totals:")
+  console.log(`  Users: ${totalUsers}`)
+  console.log(`  Workspaces: ${totalWorkspaces}`)
+  console.log(`  Apps: ${totalApps}`)
+  console.log(`  Reviews: ${totalReviews}`)
+  console.log(`  Snapshots: ${totalSnapshots}`)
+  console.log("")
+  console.log("💡 Next steps:")
+  console.log("  - Start dev server: pnpm dev")
+  console.log("  - Use quick-select buttons on login to test different scenarios")
+  console.log("  - Explore data: pnpm prisma studio")
   console.log("=" .repeat(60))
 }
 

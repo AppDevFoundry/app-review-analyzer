@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Icons } from "@/components/shared/icons";
+import { TestUserSelector } from "@/components/forms/test-user-selector";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   type?: string;
@@ -31,7 +32,6 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   });
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
-  const [isDevLoginLoading, setIsDevLoginLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
   const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -57,56 +57,9 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
     });
   }
 
-  async function handleDevLogin(email: string) {
-    setIsDevLoginLoading(true);
-
-    const signInResult = await signIn("dev-login", {
-      email,
-      redirect: false,
-      callbackUrl: searchParams?.get("from") || "/dashboard",
-    });
-
-    setIsDevLoginLoading(false);
-
-    if (!signInResult?.ok) {
-      return toast.error("Dev login failed", {
-        description: signInResult?.error || "User not found in database",
-      });
-    }
-
-    // Redirect on success
-    window.location.href = searchParams?.get("from") || "/dashboard";
-  }
-
   return (
     <div className={cn("grid gap-6", className)} {...props}>
-      {isDevelopment && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Icons.warning className="size-4 text-yellow-600" />
-            <p className="text-sm font-medium text-yellow-800">
-              Development Mode
-            </p>
-          </div>
-          <p className="text-xs text-yellow-700 mb-3">
-            Quick login for testing (disabled in production)
-          </p>
-          <button
-            type="button"
-            onClick={() => handleDevLogin("demo@appanalyzer.dev")}
-            disabled={isDevLoginLoading}
-            className={cn(
-              buttonVariants({ variant: "secondary", size: "sm" }),
-              "w-full"
-            )}
-          >
-            {isDevLoginLoading && (
-              <Icons.spinner className="mr-2 size-4 animate-spin" />
-            )}
-            Login as Demo User
-          </button>
-        </div>
-      )}
+      {isDevelopment && <TestUserSelector />}
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-2">
           <div className="grid gap-1">
@@ -120,7 +73,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
               autoCapitalize="none"
               autoComplete="email"
               autoCorrect="off"
-              disabled={isLoading || isGoogleLoading || isDevLoginLoading}
+              disabled={isLoading || isGoogleLoading}
               {...register("email")}
             />
             {errors?.email && (
@@ -129,7 +82,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
               </p>
             )}
           </div>
-          <button className={cn(buttonVariants())} disabled={isLoading || isDevLoginLoading}>
+          <button className={cn(buttonVariants())} disabled={isLoading}>
             {isLoading && (
               <Icons.spinner className="mr-2 size-4 animate-spin" />
             )}
@@ -154,7 +107,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
           setIsGoogleLoading(true);
           signIn("google");
         }}
-        disabled={isLoading || isGoogleLoading || isDevLoginLoading}
+        disabled={isLoading || isGoogleLoading}
       >
         {isGoogleLoading ? (
           <Icons.spinner className="mr-2 size-4 animate-spin" />

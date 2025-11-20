@@ -3,6 +3,7 @@ You are an expert level frontend software engineer specializing in Next.js/React
 # Task 2 – “Add App” Workflow & Metadata Fetcher
  
 Related roadmap: `PROJECT_OVERVIEW_AND_ROADMAP.md` §6 “Phase 1 – MVP” (lines 221‑245)
+Note: Here are some Progress Notes you can review for what was recently implemented from the roadmap: @docs/TASK_1_COMPLETION_SUMMARY.md
 
 ## 1. Why this matters
 - Phase 1 requires an App management UI so users can list, add, pause, or delete tracked apps inside their workspace (roadmap lines 221‑225).
@@ -218,3 +219,5 @@ Behavior:
 - Should Members be allowed to delete apps or is that Admin-only? Default to Admin/Owner for delete; note in spec so implementer can confirm.
 - Should deleting also delete future scheduled jobs (Task 3)? Add TODO for ingestion worker to respect `App.status`.
 - Need to decide where App detail route will live; for now, `View details` can link to `/apps/[appId]` placeholder.
+
+**Also note, the database currently is a branch from an outdated version, so we need to run the migration files as well to get the database setup to an expected state before starting this task. Please take a look at the database and migrations and apply accordingly**

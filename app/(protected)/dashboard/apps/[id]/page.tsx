@@ -63,7 +63,7 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
           </Avatar>
           <div>
             <h1 className="text-3xl font-bold">{app.name}</h1>
-            <p className="text-muted-foreground">{app.primaryCategory || "Uncategorized"}</p>
+            <p className="text-muted-foreground">{app.category || "Uncategorized"}</p>
             <div className="mt-2 flex items-center gap-2">
               <Badge variant={app.status === "ACTIVE" ? "default" : "secondary"}>
                 {app.status}

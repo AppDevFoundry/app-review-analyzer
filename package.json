@@ -16,6 +16,7 @@
     "postinstall": "prisma generate",
     "email": "email dev --dir emails --port 3333",
     "db:seed": "tsx prisma/seed.ts",
+    "db:reset:dev": "prisma migrate reset --force --skip-seed && tsx prisma/seed.ts",
     "db:studio": "npx prisma studio",
     "test": "vitest run",
     "test:watch": "vitest",

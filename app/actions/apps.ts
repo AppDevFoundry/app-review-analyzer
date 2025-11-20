@@ -31,6 +31,13 @@ import {
 } from "@/lib/apple"
 import { canCallAppleApi, getAppleApiLimitInfo } from "@/lib/rate-limiter"
 import { assertWithinPlanLimit, PlanLimitError } from "@/lib/workspaces"
+import {
+  canAddApp,
+  canPauseApp,
+  canDeleteApp,
+  canRestoreApp,
+  PermissionError,
+} from "@/lib/permissions"
 
 /**
  * Standard action result type
@@ -82,7 +89,16 @@ export async function createApp(
 
     const workspaceId = workspaceMember.workspace.id
 
-    // 3. Check plan limits
+    // 3. Check permissions
+    if (!canAddApp(workspaceMember.role)) {
+      return {
+        success: false,
+        error: "You don't have permission to add apps. Contact your workspace owner.",
+        code: "PERMISSION_DENIED",
+      }
+    }
+
+    // 4. Check plan limits
     try {
       await assertWithinPlanLimit(workspaceId, "apps", 1)
     } catch (error) {
@@ -96,7 +112,7 @@ export async function createApp(
       throw error
     }
 
-    // 4. Parse App Store ID
+    // 5. Parse App Store ID
     const appStoreId = parseAppStoreId(validated.identifier)
     if (!appStoreId) {
       return {
@@ -107,7 +123,7 @@ export async function createApp(
       }
     }
 
-    // 5. Check for duplicates BEFORE rate limit check (to avoid wasting API calls)
+    // 6. Check for duplicates BEFORE rate limit check (to avoid wasting API calls)
     const existingApp = await prisma.app.findFirst({
       where: {
         workspaceId,
@@ -124,7 +140,7 @@ export async function createApp(
       }
     }
 
-    // 6. Check rate limit
+    // 7. Check rate limit
     if (!canCallAppleApi(workspaceId)) {
       const limitInfo = getAppleApiLimitInfo(workspaceId)
       const resetMinutes = Math.ceil(limitInfo.resetIn / 60000)
@@ -135,7 +151,7 @@ export async function createApp(
       }
     }
 
-    // 7. Fetch metadata from Apple API
+    // 8. Fetch metadata from Apple API
     const metadata = await fetchAppStoreMetadata(
       appStoreId,
       validated.country || "us"
@@ -150,7 +166,7 @@ export async function createApp(
       }
     }
 
-    // 8. Create app record
+    // 9. Create app record
     // Generate slug from app name (lowercase, replace spaces with hyphens)
     const slug = metadata.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
@@ -163,10 +179,10 @@ export async function createApp(
         nickname: validated.nickname || null,
         bundleId: metadata.bundleId,
         iconUrl: metadata.iconUrl,
-        appStoreUrl: metadata.storeUrl,
+        storeUrl: metadata.storeUrl,
         status: AppStatus.ACTIVE,
         platform: "IOS", // Currently only iOS apps supported
-        primaryGenre: metadata.primaryCategory,
+        category: metadata.primaryCategory,
         averageRating: metadata.averageRating,
         ratingCount: metadata.ratingCount,
         country: metadata.country,
@@ -176,9 +192,15 @@ export async function createApp(
     // Revalidate apps page
     revalidatePath("/dashboard/apps")
 
+    // Convert Decimal types to numbers for client serialization
+    const serializedApp = {
+      ...app,
+      averageRating: app.averageRating ? Number(app.averageRating) : null,
+    }
+
     return {
       success: true,
-      data: { app, metadata },
+      data: { app: serializedApp, metadata },
     }
   } catch (error) {
     console.error("[createApp] Error:", error)
@@ -235,7 +257,7 @@ export async function getApps(
         iconUrl: true,
         storeUrl: true,
         status: true,
-        primaryCategory: true,
+        category: true,
         averageRating: true,
         ratingCount: true,
         lastSyncedAt: true,
@@ -250,7 +272,13 @@ export async function getApps(
       orderBy: [{ createdAt: "desc" }],
     })
 
-    return { success: true, data: apps }
+    // Convert Decimal types to numbers for client serialization
+    const serializedApps = apps.map((app) => ({
+      ...app,
+      averageRating: app.averageRating ? Number(app.averageRating) : null,
+    }))
+
+    return { success: true, data: serializedApps }
   } catch (error) {
     console.error("[getApps] Error:", error)
     return {
@@ -315,7 +343,13 @@ export async function getAppDetails(
       return { success: false, error: "App not found", code: "NOT_FOUND" }
     }
 
-    return { success: true, data: app }
+    // Convert Decimal types to numbers for client serialization
+    const serializedApp = {
+      ...app,
+      averageRating: app.averageRating ? Number(app.averageRating) : null,
+    }
+
+    return { success: true, data: serializedApp }
   } catch (error) {
     console.error("[getAppDetails] Error:", error)
     return {
@@ -349,6 +383,15 @@ export async function updateAppStatus(
 
     if (!workspaceMember) {
       return { success: false, error: "No workspace found", code: "NO_WORKSPACE" }
+    }
+
+    // Check permissions
+    if (!canPauseApp(workspaceMember.role)) {
+      return {
+        success: false,
+        error: "You don't have permission to pause/resume apps. Contact your workspace owner.",
+        code: "PERMISSION_DENIED",
+      }
     }
 
     // Verify app belongs to workspace
@@ -420,6 +463,15 @@ export async function deleteApp(
 
     if (!workspaceMember) {
       return { success: false, error: "No workspace found", code: "NO_WORKSPACE" }
+    }
+
+    // Check permissions
+    if (!canDeleteApp(workspaceMember.role)) {
+      return {
+        success: false,
+        error: "You don't have permission to delete apps. Only workspace owners and admins can delete apps.",
+        code: "PERMISSION_DENIED",
+      }
     }
 
     // Verify app belongs to workspace
@@ -503,6 +555,15 @@ export async function restoreApp(
 
     if (!workspaceMember) {
       return { success: false, error: "No workspace found", code: "NO_WORKSPACE" }
+    }
+
+    // Check permissions
+    if (!canRestoreApp(workspaceMember.role)) {
+      return {
+        success: false,
+        error: "You don't have permission to restore apps. Only workspace owners and admins can restore apps.",
+        code: "PERMISSION_DENIED",
+      }
     }
 
     // Verify app belongs to workspace and is deleted
