@@ -177,3 +177,31 @@ export function assertPermission(
     )
   }
 }
+
+/**
+ * Check if a user is a super admin
+ * Super admins are defined in the SUPER_ADMIN_EMAILS environment variable
+ * (comma-separated list of email addresses)
+ */
+export function isSuperAdmin(email: string | null | undefined): boolean {
+  if (!email) return false
+
+  const superAdminEmails =
+    process.env.SUPER_ADMIN_EMAILS?.split(",").map((e) => e.trim()) || []
+
+  return superAdminEmails.includes(email)
+}
+
+/**
+ * Assert that a user is a super admin
+ * Throws PermissionError if not a super admin
+ */
+export function assertSuperAdmin(
+  email: string | null | undefined
+): asserts email {
+  if (!isSuperAdmin(email)) {
+    throw new PermissionError(
+      "Super admin access required. This action is only available to system administrators."
+    )
+  }
+}

@@ -20,8 +20,8 @@ import {
 import {
   assertWithinPlanLimit,
   getWorkspaceWithPlan,
-  type WorkspaceWithPlan,
 } from "@/lib/workspaces"
+import type { WorkspaceWithPlan } from "@/types/workspace"
 import { canCallAppleReviewsApi } from "@/lib/rate-limiter"
 import {
   fetchReviewsFromRSS,
@@ -135,7 +135,7 @@ export async function ingestReviews(
     // Step 6: Determine review limit
     const reviewLimit =
       options.limit ||
-      workspaceWithPlan.workspace.reviewLimitPerRun ||
+      workspaceWithPlan.reviewLimitPerRun ||
       100
 
     // Step 7: Fetch reviews from Apple

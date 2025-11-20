@@ -28,7 +28,7 @@ export async function recordMetric(
       data: {
         metricType: type,
         value,
-        metadata: metadata || null,
+        metadata: metadata ? (metadata as any) : null,
         workspaceId: workspaceId || null,
         recordedAt: new Date(),
       },
