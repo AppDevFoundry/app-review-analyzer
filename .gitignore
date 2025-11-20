@@ -28,6 +28,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.test
 
 # vercel
 .vercel
@@ -40,4 +41,4 @@ next-env.d.ts
 /.react-email/
 
 .vscode
-.contentlayer
+.contentlayer.claude/

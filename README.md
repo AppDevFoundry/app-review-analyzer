@@ -54,16 +54,127 @@ pnpm install
 cp .env.example .env.local
 ```
 
-3. Start the development server:
+3. Set up the database:
+
+```sh
+# Run Prisma migrations
+npx prisma migrate deploy
+
+# Generate Prisma client
+npx prisma generate
+
+# Seed the database with demo data
+npx prisma db seed
+```
+
+4. Start the development server:
 
 ```sh
 pnpm run dev
 ```
 
-> [!NOTE]  
+> [!NOTE]
 > I use [npm-check-updates](https://www.npmjs.com/package/npm-check-updates) package for update this project.
 >
 > Use this command for update your project: `ncu -i --format group`
+
+## Database
+
+### Schema Overview
+
+The application uses a fully normalized PostgreSQL schema with the following key models:
+
+- **Workspace** - Multi-tenant workspace with plan-based limits
+- **App** - Tracked iOS apps
+- **Review** - Individual app store reviews with full metadata
+- **ReviewSnapshot** - Analysis runs with aggregated insights
+- **ReviewSnapshotInsight** - Categorized findings (bugs, features, praise)
+- **ReviewInsightLink** - Links insights back to source reviews
+
+See the complete schema in `prisma/schema.prisma`.
+
+### Working with the Database
+
+```sh
+# View data in Prisma Studio
+npx prisma studio
+
+# Create a new migration after schema changes
+npx prisma migrate dev --name your_migration_name
+
+# Reset database (⚠️ deletes all data)
+npx prisma migrate reset
+
+# Re-seed database
+npx prisma db seed
+```
+
+### Seed Data
+
+The seed script (`prisma/seed.ts`) creates:
+- Demo user (`demo@appanalyzer.dev`)
+- Sample workspace
+- StoryGraph app with 739 real reviews
+- Complete analysis snapshot with insights
+
+All seed data is sourced from `prototype/review-analyzer/` JSON files.
+
+## Testing
+
+### Running Tests
+
+The project uses [Vitest](https://vitest.dev/) for unit and integration testing.
+
+```sh
+# Run all tests once
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with UI
+pnpm test:ui
+
+# Run tests with coverage
+pnpm test:coverage
+```
+
+### Test Database Setup
+
+Tests require a separate test database to avoid affecting development data:
+
+1. **Option A - Neon Branch (Recommended)**:
+   - Create a new branch in your Neon project (e.g., `model_a_test`)
+   - Copy the connection string from Neon dashboard
+   - Update `DATABASE_URL_TEST` in `.env.test`
+
+2. **Option B - Local PostgreSQL**:
+   - Install PostgreSQL locally
+   - Create a test database: `createdb app_review_analyzer_test`
+   - Update `DATABASE_URL_TEST` in `.env.test`
+
+**Important**: The test database will be cleaned between test runs. Never point `DATABASE_URL_TEST` to your production or development database!
+
+### Writing Tests
+
+Test files follow this structure:
+
+```typescript
+import { describe, it, expect } from "vitest"
+import { withCleanDb } from "@/tests/utils/test-db"
+
+describe("My Feature", () => {
+  it("should do something", async () => {
+    await withCleanDb(async (prisma) => {
+      // Your test code with a clean database
+      const result = await prisma.user.create({ ... })
+      expect(result).toBeDefined()
+    })
+  })
+})
+```
+
+See `tests/config/plan-limits.test.ts` for examples.
 
 ## Roadmap
 

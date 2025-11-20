@@ -1,0 +1,446 @@
+{
+  "info": {
+    "name": "App Review Analyzer",
+    "description": "API endpoints for the App Review Analyzer system. This collection includes endpoints for managing apps, fetching reviews, running analyses, and accessing insights.\n\n## Authentication\nAll endpoints require authentication via Next.js Auth.js session cookies.\n\n## Environment Variables\n- `baseUrl`: Base URL for the API (e.g., http://localhost:3000)\n- `workspaceId`: Active workspace ID for multi-tenant operations\n\n## Mock Mode\nSet `MOCK_APPLE_API=true` in your .env.local to use mock data instead of calling the real Apple API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "app-review-analyzer"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "workspaceId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Apps",
+      "description": "Manage iOS apps for review tracking",
+      "item": [
+        {
+          "name": "Create App",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"1570489264\",\n  \"nickname\": \"StoryGraph\",\n  \"country\": \"us\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/apps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps"]
+            },
+            "description": "Create a new app for review tracking.\n\n**Request Body:**\n- `identifier` (string, required): App Store URL or numeric app ID\n  - Examples: \"1570489264\", \"https://apps.apple.com/us/app/storygraph/id1570489264\"\n- `nickname` (string, optional): Custom name for the app\n- `country` (string, optional): 2-letter country code (default: \"us\")\n\n**Plan Limits:**\n- STARTER: 1 app\n- PRO: 10 apps\n- BUSINESS: 50 apps\n\n**Success Response (201):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"workspaceId\": \"clw1234567890\",\n    \"appStoreId\": \"1570489264\",\n    \"name\": \"StoryGraph\",\n    \"nickname\": \"StoryGraph\",\n    \"bundleId\": \"com.storygraph.app\",\n    \"iconUrl\": \"https://...\",\n    \"appStoreUrl\": \"https://apps.apple.com/us/app/storygraph/id1570489264\",\n    \"status\": \"ACTIVE\",\n    \"primaryGenre\": \"Books\",\n    \"averageRating\": 4.8,\n    \"ratingCount\": 15234,\n    \"country\": \"us\",\n    \"createdAt\": \"2025-11-18T12:00:00.000Z\"\n  }\n}\n```\n\n**Error Responses:**\n- 400: Invalid input (validation error)\n- 401: Unauthorized\n- 403: Plan limit exceeded\n- 404: App not found in App Store\n- 409: App already exists\n- 429: Rate limit exceeded (10 calls/min)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success field\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains app data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('appStoreId');",
+                  "    pm.expect(jsonData.data).to.have.property('name');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data.status).to.equal('ACTIVE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Apps",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps?workspaceId={{workspaceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps"],
+              "query": [
+                {
+                  "key": "workspaceId",
+                  "value": "{{workspaceId}}"
+                }
+              ]
+            },
+            "description": "Retrieve all apps for the authenticated workspace.\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"clx1234567890\",\n      \"appStoreId\": \"1570489264\",\n      \"name\": \"StoryGraph\",\n      \"nickname\": \"StoryGraph\",\n      \"status\": \"ACTIVE\",\n      \"iconUrl\": \"https://...\",\n      \"averageRating\": 4.8,\n      \"ratingCount\": 15234,\n      \"primaryGenre\": \"Books\",\n      \"lastAnalyzedAt\": \"2025-11-18T12:00:00.000Z\",\n      \"createdAt\": \"2025-11-18T10:00:00.000Z\"\n    }\n  ]\n}\n```"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get App Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId"],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get detailed information about a specific app.\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"appStoreId\": \"1570489264\",\n    \"name\": \"StoryGraph\",\n    \"nickname\": \"StoryGraph\",\n    \"bundleId\": \"com.storygraph.app\",\n    \"iconUrl\": \"https://...\",\n    \"appStoreUrl\": \"https://apps.apple.com/us/app/storygraph/id1570489264\",\n    \"status\": \"ACTIVE\",\n    \"primaryGenre\": \"Books\",\n    \"averageRating\": 4.8,\n    \"ratingCount\": 15234,\n    \"country\": \"us\",\n    \"lastAnalyzedAt\": \"2025-11-18T12:00:00.000Z\",\n    \"createdAt\": \"2025-11-18T10:00:00.000Z\",\n    \"_count\": {\n      \"reviews\": 739,\n      \"reviewSnapshots\": 5\n    }\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Update App Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAUSED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId", "status"],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Update the status of an app (ACTIVE or PAUSED).\n\n**Request Body:**\n- `status` (string, required): Either \"ACTIVE\" or \"PAUSED\"\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"status\": \"PAUSED\",\n    \"updatedAt\": \"2025-11-18T12:30:00.000Z\"\n  }\n}\n```"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status was updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.be.oneOf(['ACTIVE', 'PAUSED']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete App (Soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId"],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Soft delete an app (can be restored later).\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"App deleted successfully\",\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"deletedAt\": \"2025-11-18T12:45:00.000Z\"\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete App (Hard)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId?hard=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId"],
+              "query": [
+                {
+                  "key": "hard",
+                  "value": "true"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Permanently delete an app and all associated data.\n\n**WARNING:** This action is irreversible. All reviews, analyses, and insights will be permanently deleted.\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"App permanently deleted\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Restore Deleted App",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId", "restore"],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Restore a soft-deleted app.\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"message\": \"App restored successfully\",\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"status\": \"ACTIVE\",\n    \"deletedAt\": null,\n    \"restoredAt\": \"2025-11-18T13:00:00.000Z\"\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "description": "Fetch and manage app reviews",
+      "item": [
+        {
+          "name": "Fetch Latest Reviews",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appId\": \"clx1234567890\",\n  \"sortType\": \"MOST_RECENT\",\n  \"limit\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/fetch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "fetch"]
+            },
+            "description": "Fetch latest reviews from App Store for a specific app.\n\n**Request Body:**\n- `appId` (string, required): App ID to fetch reviews for\n- `sortType` (string, optional): \"MOST_RECENT\" or \"MOST_HELPFUL\" (default: MOST_RECENT)\n- `limit` (number, optional): Number of reviews to fetch (respects plan limits)\n\n**Plan Limits:**\n- STARTER: 100 reviews per run\n- PRO: 1000 reviews per run\n- BUSINESS: 5000 reviews per run\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"reviewsFetched\": 100,\n    \"reviewsStored\": 95,\n    \"duplicatesSkipped\": 5\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "List Reviews for App",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId/reviews?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId", "reviews"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get paginated list of reviews for an app."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analysis",
+      "description": "Run and manage review analyses",
+      "item": [
+        {
+          "name": "Run Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appId\": \"clx1234567890\",\n  \"includeAiInsights\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/analysis/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analysis", "run"]
+            },
+            "description": "Trigger a new analysis run for an app's reviews.\n\n**Plan Limits:**\n- STARTER: 4 analyses per month\n- PRO: 30 analyses per month\n- BUSINESS: Unlimited\n\n**Success Response (202):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"snapshotId\": \"cls1234567890\",\n    \"status\": \"PROCESSING\",\n    \"message\": \"Analysis started. Check status at /api/analysis/cls1234567890\"\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analysis Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analysis/:snapshotId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analysis", ":snapshotId"],
+              "variable": [
+                {
+                  "key": "snapshotId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Check the status of an analysis run."
+          },
+          "response": []
+        },
+        {
+          "name": "List Analysis History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/apps/:appId/analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "apps", ":appId", "analyses"],
+              "variable": [
+                {
+                  "key": "appId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get all analysis snapshots for an app."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Insights",
+      "description": "Access categorized insights from analyses",
+      "item": [
+        {
+          "name": "Get Insights for Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analysis/:snapshotId/insights?category=BUGS",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analysis", ":snapshotId", "insights"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "BUGS",
+                  "description": "Optional filter: BUGS, FEATURE_REQUESTS, UI_UX, PERFORMANCE, CONTENT, PRICING, COMPETITION, GENERAL_POSITIVE, GENERAL_NEGATIVE"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "snapshotId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get categorized insights from an analysis snapshot."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Workspaces",
+      "description": "Workspace and plan management",
+      "item": [
+        {
+          "name": "Get Current Workspace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workspace",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workspace"]
+            },
+            "description": "Get current workspace information including plan and usage."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plan Limits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workspace/limits",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workspace", "limits"]
+            },
+            "description": "Get current plan limits and usage statistics.\n\n**Success Response (200):**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"plan\": \"STARTER\",\n    \"limits\": {\n      \"maxApps\": 1,\n      \"maxAnalysesPerMonth\": 4,\n      \"maxReviewsPerRun\": 100\n    },\n    \"usage\": {\n      \"appCount\": 1,\n      \"analysesThisMonth\": 2,\n      \"lastAnalysisDate\": \"2025-11-18T12:00:00.000Z\"\n    },\n    \"remaining\": {\n      \"apps\": 0,\n      \"analyses\": 2\n    }\n  }\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

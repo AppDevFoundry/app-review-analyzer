@@ -5,6 +5,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
+import { ensureUserHasWorkspace } from "@/lib/workspace";
 
 // More info: https://authjs.dev/getting-started/typescript#module-augmentation
 declare module "next-auth" {
@@ -53,6 +54,9 @@ export const {
       const dbUser = await getUserById(token.sub);
 
       if (!dbUser) return token;
+
+      // Ensure user has a workspace (auto-create if needed)
+      await ensureUserHasWorkspace(dbUser.id, dbUser.name);
 
       token.name = dbUser.name;
       token.email = dbUser.email;
