@@ -25,6 +25,7 @@ enum WorkspaceRole {
   OWNER
   ADMIN
   MEMBER
+  VIEWER
 }
 
 enum AppPlatform {
@@ -217,10 +218,12 @@ model App {
   // App metadata
   name            String
   slug            String
+  nickname        String? // User-provided custom name
   developerName   String?
-  primaryCategory String?
+  primaryCategory String? // Primary category from App Store
   iconUrl         String?
   storeUrl        String?
+  country         String? // Country code for App Store region
 
   // Ratings info (cached from App Store)
   averageRating Decimal? @db.Decimal(3, 2)
@@ -229,6 +232,9 @@ model App {
   // Status
   status       AppStatus @default(ACTIVE)
   lastSyncedAt DateTime? @map(name: "last_synced_at")
+
+  // Soft delete support
+  deletedAt DateTime? @map(name: "deleted_at")
 
   // Timestamps
   createdAt DateTime @default(now()) @map(name: "created_at")
@@ -241,6 +247,7 @@ model App {
 
   @@unique([workspaceId, appStoreId])
   @@index([workspaceId, status])
+  @@index([workspaceId, deletedAt])
   @@index([platform, appStoreId])
   @@map(name: "apps")
 }

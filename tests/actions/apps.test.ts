@@ -136,6 +136,7 @@ describe("App Server Actions", () => {
 
       const result = await createApp({
         identifier: "1570489264",
+        country: "us",
       })
 
       expect(result.success).toBe(false)
@@ -181,7 +182,7 @@ describe("App Server Actions", () => {
           slug: "existing-app",
           bundleId: "com.existing.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id999999999",
+          storeUrl: "https://apps.apple.com/app/id999999999",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -196,6 +197,7 @@ describe("App Server Actions", () => {
       // Try to add second app
       const result = await createApp({
         identifier: "1570489264",
+        country: "us",
       })
 
       expect(result.success).toBe(false)
@@ -236,6 +238,7 @@ describe("App Server Actions", () => {
 
       const result = await createApp({
         identifier: "not-a-valid-id",
+        country: "us",
       })
 
       expect(result.success).toBe(false)
@@ -281,7 +284,7 @@ describe("App Server Actions", () => {
             slug: "storygraph",
             bundleId: "com.storygraph.app",
             iconUrl: "https://example.com/icon1.png",
-            appStoreUrl: "https://apps.apple.com/app/id1570489264",
+            storeUrl: "https://apps.apple.com/app/id1570489264",
             status: AppStatus.ACTIVE,
             platform: AppPlatform.IOS,
             country: "us",
@@ -293,7 +296,7 @@ describe("App Server Actions", () => {
             slug: "goodreads",
             bundleId: "com.goodreads.app",
             iconUrl: "https://example.com/icon2.png",
-            appStoreUrl: "https://apps.apple.com/app/id355833469",
+            storeUrl: "https://apps.apple.com/app/id355833469",
             status: AppStatus.PAUSED,
             platform: AppPlatform.IOS,
             country: "us",
@@ -305,7 +308,7 @@ describe("App Server Actions", () => {
             slug: "deleted-app",
             bundleId: "com.deleted.app",
             iconUrl: "https://example.com/icon3.png",
-            appStoreUrl: "https://apps.apple.com/app/id999999999",
+            storeUrl: "https://apps.apple.com/app/id999999999",
             status: AppStatus.ACTIVE,
             platform: AppPlatform.IOS,
             country: "us",
@@ -365,7 +368,7 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
+          storeUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -428,7 +431,7 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
+          storeUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -487,7 +490,7 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
+          storeUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -547,7 +550,7 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
+          storeUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",

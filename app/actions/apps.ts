@@ -163,10 +163,10 @@ export async function createApp(
         nickname: validated.nickname || null,
         bundleId: metadata.bundleId,
         iconUrl: metadata.iconUrl,
-        appStoreUrl: metadata.storeUrl,
+        storeUrl: metadata.storeUrl,
         status: AppStatus.ACTIVE,
         platform: "IOS", // Currently only iOS apps supported
-        primaryGenre: metadata.primaryCategory,
+        primaryCategory: metadata.primaryCategory,
         averageRating: metadata.averageRating,
         ratingCount: metadata.ratingCount,
         country: metadata.country,
@@ -227,6 +227,7 @@ export async function getApps(
     const apps = await prisma.app.findMany({
       where: {
         workspaceId: workspaceMember.workspace.id,
+        ...(includeDeleted ? {} : { deletedAt: null }),
       },
       select: {
         id: true,
@@ -448,10 +449,13 @@ export async function deleteApp(
         data: { message: "App permanently deleted" },
       }
     } else {
-      // Soft delete: Set deletedAt timestamp
+      // Soft delete: Set deletedAt timestamp and status to ARCHIVED
       await prisma.app.update({
         where: { id: validated.appId },
-        data: { deletedAt: new Date() },
+        data: {
+          deletedAt: new Date(),
+          status: AppStatus.ARCHIVED,
+        },
       })
 
       revalidatePath("/dashboard/apps")
@@ -550,7 +554,10 @@ export async function restoreApp(
     // Restore app
     const restoredApp = await prisma.app.update({
       where: { id: validated.appId },
-      data: { deletedAt: null },
+      data: {
+        deletedAt: null,
+        status: AppStatus.ACTIVE,
+      },
       select: {
         id: true,
         name: true,
@@ -743,6 +750,67 @@ export async function getAppInsights(
     return {
       success: false,
       error: "Failed to fetch insights",
+      code: "INTERNAL_ERROR",
+    }
+  }
+}
+
+/**
+ * Get workspace usage information for plan limit display
+ *
+ * @returns Workspace usage info including current app count and plan limits
+ */
+export async function getWorkspaceUsageInfo(): Promise<
+  ActionResult<{
+    currentAppCount: number
+    maxApps: number
+    planName: string
+    workspaceId: string
+  }>
+> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized", code: "UNAUTHORIZED" }
+    }
+
+    const workspaceMember = await prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id },
+      include: {
+        workspace: {
+          include: {
+            _count: {
+              select: {
+                apps: {
+                  where: { deletedAt: null },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!workspaceMember) {
+      return { success: false, error: "No workspace found", code: "NO_WORKSPACE" }
+    }
+
+    const { workspace } = workspaceMember
+
+    return {
+      success: true,
+      data: {
+        currentAppCount: workspace._count.apps,
+        maxApps: workspace.appLimit,
+        planName: workspace.plan.charAt(0) + workspace.plan.slice(1).toLowerCase(),
+        workspaceId: workspace.id,
+      },
+    }
+  } catch (error) {
+    console.error("[getWorkspaceUsageInfo] Error:", error)
+    return {
+      success: false,
+      error: "Failed to fetch workspace usage",
       code: "INTERNAL_ERROR",
     }
   }
