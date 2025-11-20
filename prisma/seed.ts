@@ -97,30 +97,35 @@ const SAMPLE_APPS = [
     name: "StoryGraph",
     developerName: "StoryGraph",
     category: "Books",
+    iconUrl: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/74/43/1a744384-05d6-1a3b-0430-e1fe86ac3f1b/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/512x512bb.jpg",
   },
   {
     appStoreId: "310633997",
     name: "WhatsApp Messenger",
     developerName: "WhatsApp Inc.",
     category: "Social Networking",
+    iconUrl: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b1/25/90/b12590e8-a2b3-6232-c8ea-d98f93e1f965/AppIcon-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-0-85-220.png/512x512bb.jpg",
   },
   {
     appStoreId: "389801252",
     name: "Instagram",
     developerName: "Instagram, Inc.",
     category: "Photo & Video",
+    iconUrl: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/e7/a7/1d/e7a71d01-dd76-a761-2383-c1ef489319ef/Prod-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg",
   },
   {
     appStoreId: "544007664",
     name: "YouTube",
     developerName: "Google LLC",
     category: "Photo & Video",
+    iconUrl: "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/27/8b/4a/278b4af1-830c-551d-694d-d1e64bc68677/logo_youtube_2024_q4_color-0-1x_U007emarketing-0-0-0-7-0-0-0-85-220-0.png/512x512bb.jpg",
   },
   {
-    appStoreId: "1482920575",
+    appStoreId: "570060128",
     name: "Duolingo",
     developerName: "Duolingo",
     category: "Education",
+    iconUrl: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/20/4a/b3/204ab354-976f-4f35-3b6e-55ef57f34d5c/AppIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg",
   },
 ]
 
@@ -217,13 +222,21 @@ async function createSimpleApp(
   appStoreId: string,
   name: string,
   developerName: string,
-  category: string
+  category: string,
+  iconUrl?: string
 ) {
   const existing = await prisma.app.findFirst({
     where: { workspaceId, appStoreId },
   })
 
   if (existing) {
+    // Always update iconUrl since Apple CDN URLs can become stale
+    if (iconUrl && existing.iconUrl !== iconUrl) {
+      return prisma.app.update({
+        where: { id: existing.id },
+        data: { iconUrl },
+      })
+    }
     return existing
   }
 
@@ -236,6 +249,7 @@ async function createSimpleApp(
       slug: generateSlug(name),
       developerName,
       category,
+      iconUrl,
       status: AppStatus.ACTIVE,
     },
   })
@@ -294,7 +308,8 @@ async function main() {
           appData.appStoreId,
           appData.name,
           appData.developerName,
-          appData.category
+          appData.category,
+          appData.iconUrl
         )
       }
       console.log(`✅ Created ${config.appsToCreate} app(s)`)
