@@ -181,7 +181,6 @@ describe("App Server Actions", () => {
           slug: "existing-app",
           bundleId: "com.existing.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id999999999",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -240,7 +239,8 @@ describe("App Server Actions", () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.code).toBe("INVALID_IDENTIFIER")
+        // Zod validation catches invalid identifiers before parseAppStoreId
+        expect(result.code).toBe("VALIDATION_ERROR")
       }
     })
   })
@@ -281,7 +281,6 @@ describe("App Server Actions", () => {
             slug: "storygraph",
             bundleId: "com.storygraph.app",
             iconUrl: "https://example.com/icon1.png",
-            appStoreUrl: "https://apps.apple.com/app/id1570489264",
             status: AppStatus.ACTIVE,
             platform: AppPlatform.IOS,
             country: "us",
@@ -293,7 +292,6 @@ describe("App Server Actions", () => {
             slug: "goodreads",
             bundleId: "com.goodreads.app",
             iconUrl: "https://example.com/icon2.png",
-            appStoreUrl: "https://apps.apple.com/app/id355833469",
             status: AppStatus.PAUSED,
             platform: AppPlatform.IOS,
             country: "us",
@@ -305,7 +303,6 @@ describe("App Server Actions", () => {
             slug: "deleted-app",
             bundleId: "com.deleted.app",
             iconUrl: "https://example.com/icon3.png",
-            appStoreUrl: "https://apps.apple.com/app/id999999999",
             status: AppStatus.ACTIVE,
             platform: AppPlatform.IOS,
             country: "us",
@@ -365,7 +362,6 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -428,7 +424,6 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -487,7 +482,6 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
@@ -547,7 +541,6 @@ describe("App Server Actions", () => {
           slug: "storygraph",
           bundleId: "com.storygraph.app",
           iconUrl: "https://example.com/icon.png",
-          appStoreUrl: "https://apps.apple.com/app/id1570489264",
           status: AppStatus.ACTIVE,
           platform: AppPlatform.IOS,
           country: "us",
