@@ -54,10 +54,12 @@ export async function cleanDatabase(prisma: PrismaClient) {
   await prisma.positiveAspect.deleteMany()
   await prisma.monthlyTrend.deleteMany()
   await prisma.ratingDistribution.deleteMany()
+  await prisma.reviewIngestionRun.deleteMany() // Task 3
   await prisma.reviewSnapshot.deleteMany()
   await prisma.review.deleteMany()
   await prisma.app.deleteMany()
   await prisma.workspaceMember.deleteMany()
+  await prisma.systemHealthMetric.deleteMany() // Task 3
   await prisma.workspace.deleteMany()
   await prisma.session.deleteMany()
   await prisma.account.deleteMany()

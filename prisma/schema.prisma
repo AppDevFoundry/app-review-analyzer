@@ -77,6 +77,32 @@ enum InsightCategory {
   SOCIAL
 }
 
+enum IngestionReason {
+  MANUAL
+  SCHEDULED
+  AUTOMATIC
+}
+
+enum IngestionStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  PARTIAL
+}
+
+enum MetricType {
+  INGESTION_SUCCESS_RATE
+  INGESTION_FAILURE_RATE
+  AVG_INGESTION_DURATION
+  TOTAL_REVIEWS_FETCHED
+  TOTAL_REVIEWS_INSERTED
+  DUPLICATE_RATE
+  API_ERROR_RATE
+  RATE_LIMIT_HITS
+  PLAN_LIMIT_HITS
+}
+
 model Account {
   id                String   @id @default(cuid())
   userId            String
@@ -124,7 +150,8 @@ model User {
   accounts         Account[]
   sessions         Session[]
   workspaceMembers WorkspaceMember[]
-  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  ownedWorkspaces  Workspace[]          @relation("WorkspaceOwner")
+  ingestionRuns    ReviewIngestionRun[]
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -179,6 +206,8 @@ model Workspace {
   reviews         Review[]
   reviewSnapshots ReviewSnapshot[]
   insights        ReviewSnapshotInsight[]
+  ingestionRuns   ReviewIngestionRun[]
+  healthMetrics   SystemHealthMetric[]
 
   @@index([ownerId])
   @@index([deletedAt])
@@ -214,16 +243,16 @@ model App {
   platform   AppPlatform
   appStoreId String // Apple numeric ID (e.g., "1570489264")
   bundleId   String?
-  country    String      @default("us") // Market/region (e.g., "us", "gb")
+  country    String? // Market/region (e.g., "us", "gb")
 
   // App metadata
-  name         String
-  slug         String
-  nickname     String? // User's custom label for this app
-  developerName String?
-  category     String? // App category/genre (e.g., "Books", "Productivity")
-  iconUrl      String?
-  storeUrl     String?
+  name            String
+  slug            String
+  nickname        String? // User's custom label for this app
+  developerName   String?
+  primaryCategory String? // App category/genre (e.g., "Books", "Productivity")
+  iconUrl         String?
+  storeUrl        String?
 
   // Ratings info (cached from App Store)
   averageRating Decimal? @db.Decimal(3, 2)
@@ -233,15 +262,21 @@ model App {
   status       AppStatus @default(ACTIVE)
   lastSyncedAt DateTime? @map(name: "last_synced_at")
 
+  // Ingestion failure tracking
+  consecutiveFailures Int       @default(0) @map(name: "consecutive_failures")
+  lastFailureReason   String?   @map(name: "last_failure_reason")
+  nextRetryAt         DateTime? @map(name: "next_retry_at")
+
   // Timestamps
   createdAt DateTime  @default(now()) @map(name: "created_at")
   updatedAt DateTime  @updatedAt @map(name: "updated_at")
   deletedAt DateTime? @map(name: "deleted_at")
 
   // Relations
-  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   reviews         Review[]
   reviewSnapshots ReviewSnapshot[]
+  ingestionRuns   ReviewIngestionRun[]
 
   @@unique([workspaceId, appStoreId])
   @@index([workspaceId, status])
@@ -349,6 +384,7 @@ model ReviewSnapshot {
   insights           ReviewSnapshotInsight[]
   positiveAspects    PositiveAspect[]
   llmInsight         LLMInsight?
+  ingestionRuns      ReviewIngestionRun[]
 
   @@index([workspaceId, appId, analysisDate])
   @@index([status])
@@ -481,4 +517,77 @@ model LLMInsight {
   reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
 
   @@map(name: "llm_insights")
+}
+
+// ============================================================================
+// Review Ingestion Models (Task 3)
+// ============================================================================
+
+model ReviewIngestionRun {
+  id          String @id @default(cuid())
+  workspaceId String
+  appId       String
+
+  // Trigger information
+  reason            IngestionReason
+  triggeredByUserId String?
+  triggeredBy       User?           @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+
+  // Status tracking
+  status IngestionStatus @default(PENDING)
+
+  // Timing information
+  requestedAt DateTime  @default(now()) @map(name: "requested_at")
+  startedAt   DateTime? @map(name: "started_at")
+  finishedAt  DateTime? @map(name: "finished_at")
+  durationMs  Int?      @map(name: "duration_ms")
+
+  // Metrics
+  reviewsFetched   Int      @default(0) @map(name: "reviews_fetched")
+  reviewsInserted  Int      @default(0) @map(name: "reviews_inserted")
+  duplicateCount   Int      @default(0) @map(name: "duplicate_count")
+  reviewsSkipped   Int      @default(0) @map(name: "reviews_skipped")
+  sourcesProcessed String[] @default([]) @map(name: "sources_processed")
+
+  // Error handling
+  errorMessage String? @map(name: "error_message") @db.Text
+  errorCode    String? @map(name: "error_code")
+
+  // Additional metadata (store raw response data, retry info, etc.)
+  metadata Json?
+
+  // Link to generated snapshot (if any)
+  snapshotId     String?         @map(name: "snapshot_id")
+  reviewSnapshot ReviewSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  app       App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([appId, status])
+  @@index([requestedAt])
+  @@index([status])
+  @@map(name: "review_ingestion_runs")
+}
+
+model SystemHealthMetric {
+  id String @id @default(cuid())
+
+  // Metric information
+  metricType MetricType @map(name: "metric_type")
+  value      Float
+  metadata   Json?
+
+  // Optional workspace association (null for system-wide metrics)
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Timestamp
+  recordedAt DateTime @default(now()) @map(name: "recorded_at")
+
+  @@index([metricType, recordedAt])
+  @@index([workspaceId, metricType])
+  @@index([recordedAt])
+  @@map(name: "system_health_metrics")
 }
