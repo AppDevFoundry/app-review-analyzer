@@ -1,0 +1,350 @@
+{
+  "info": {
+    "_postman_id": "review-ingestion-collection",
+    "name": "Review Ingestion API",
+    "description": "API endpoints for the App Review Analyzer review ingestion service.\n\n## Authentication\n\nThe cron endpoints require authentication via:\n- Bearer token in Authorization header\n- Query parameter `secret`\n\nIn development mode, authentication is optional when no CRON_SECRET is configured.\n\n## Endpoints\n\n- **Health Check**: GET /api/jobs/review-ingestion\n- **Run Ingestion**: POST /api/jobs/review-ingestion",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "cronSecret",
+      "value": "your-cron-secret-here",
+      "type": "string",
+      "description": "CRON_SECRET for authenticating cron requests"
+    }
+  ],
+  "item": [
+    {
+      "name": "Cron Jobs",
+      "description": "Scheduled review ingestion endpoints",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "review-ingestion"]
+            },
+            "description": "Check the health status of the review ingestion job.\n\nReturns:\n- Job status\n- Configuration settings\n- Number of eligible apps\n- List of next apps to be processed"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "jobs", "review-ingestion"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": \"ok\",\n  \"job\": \"review-ingestion\",\n  \"config\": {\n    \"maxAppsPerRun\": 10,\n    \"delayBetweenAppsMs\": 3000\n  },\n  \"eligibleApps\": 2,\n  \"nextApps\": [\n    {\n      \"id\": \"clx123...\",\n      \"name\": \"My App\",\n      \"lastSyncedAt\": null\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Run Ingestion (Bearer Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cronSecret}}",
+                "type": "text",
+                "description": "Bearer token authentication"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "review-ingestion"]
+            },
+            "description": "Trigger the scheduled review ingestion job.\n\nThis endpoint:\n1. Finds all eligible apps (active, not recently synced)\n2. Fetches reviews from Apple App Store for each app\n3. Deduplicates and stores new reviews\n4. Creates pending snapshots for AI analysis\n\nAuthentication: Bearer token in Authorization header"
+          },
+          "response": [
+            {
+              "name": "Success - Apps Processed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cronSecret}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "jobs", "review-ingestion"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Processed 2 apps\",\n  \"startedAt\": \"2024-01-15T10:00:00.000Z\",\n  \"completedAt\": \"2024-01-15T10:00:15.000Z\",\n  \"durationMs\": 15000,\n  \"results\": {\n    \"total\": 2,\n    \"succeeded\": 2,\n    \"failed\": 0,\n    \"skipped\": 0\n  },\n  \"details\": [\n    {\n      \"appId\": \"clx123...\",\n      \"appName\": \"My App\",\n      \"success\": true,\n      \"reviewsFetched\": 50,\n      \"reviewsNew\": 12,\n      \"durationMs\": 5000\n    }\n  ]\n}"
+            },
+            {
+              "name": "Success - No Eligible Apps",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{cronSecret}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "jobs", "review-ingestion"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"No eligible apps found for ingestion\",\n  \"startedAt\": \"2024-01-15T10:00:00.000Z\",\n  \"completedAt\": \"2024-01-15T10:00:00.050Z\",\n  \"durationMs\": 50,\n  \"results\": {\n    \"total\": 0,\n    \"succeeded\": 0,\n    \"failed\": 0,\n    \"skipped\": 0\n  },\n  \"details\": []\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/api/jobs/review-ingestion",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "jobs", "review-ingestion"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"error\": \"Unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Run Ingestion (Query Param)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/review-ingestion?secret={{cronSecret}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "review-ingestion"],
+              "query": [
+                {
+                  "key": "secret",
+                  "value": "{{cronSecret}}",
+                  "description": "Query parameter authentication (Vercel Cron compatible)"
+                }
+              ]
+            },
+            "description": "Trigger the scheduled review ingestion job using query parameter authentication.\n\nThis method is compatible with Vercel Cron which passes the secret as a query parameter."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Server Actions (via API)",
+      "description": "These endpoints simulate the server actions. Note: Server actions are typically called from the frontend, not directly via HTTP.\n\nThese examples show the expected request/response format.",
+      "item": [
+        {
+          "name": "Fetch App Reviews (Manual Trigger)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{sessionCookie}}",
+                "description": "Session cookie for authentication"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appId\": \"{{appId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/fetch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "fetch"]
+            },
+            "description": "Manually trigger review fetching for a specific app.\n\n**Note**: This is typically called via Next.js Server Actions from the UI, not as a direct API call. This example shows the expected format.\n\n**Quota**: Subject to daily limits based on workspace plan:\n- STARTER: 1/day\n- PRO: 5/day\n- BUSINESS: 20/day"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"runId\": \"clx456...\",\n    \"reviewsFetched\": 50,\n    \"reviewsNew\": 12,\n    \"reviewsDuplicate\": 38,\n    \"pagesProcessed\": 5,\n    \"sourcesProcessed\": [\"mostRecent\", \"mostHelpful\"],\n    \"durationMs\": 8500\n  }\n}"
+            },
+            {
+              "name": "Daily Limit Exceeded",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"error\": \"Daily manual ingestion limit reached. You can run 1 manual fetch per day on your current plan.\",\n  \"code\": \"DAILY_LIMIT_EXCEEDED\"\n}"
+            },
+            {
+              "name": "App Not Found",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"error\": \"App not found or you don't have access to it.\",\n  \"code\": \"APP_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Quota Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{sessionCookie}}",
+                "description": "Session cookie for authentication"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/quota",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "quota"]
+            },
+            "description": "Get the current workspace's review ingestion quota status.\n\n**Note**: This is typically called via Next.js Server Actions from the UI."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"plan\": \"PRO\",\n    \"manualRunsPerDay\": 5,\n    \"manualRunsUsedToday\": 2,\n    \"canRunManualIngestion\": true,\n    \"lastIngestionAt\": \"2024-01-15T08:30:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Ingestion History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "{{sessionCookie}}",
+                "description": "Session cookie for authentication"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/history?appId={{appId}}&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "history"],
+              "query": [
+                {
+                  "key": "appId",
+                  "value": "{{appId}}",
+                  "description": "App ID to get history for"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of records to return"
+                }
+              ]
+            },
+            "description": "Get the ingestion run history for a specific app.\n\n**Note**: This is typically called via Next.js Server Actions from the UI."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"clx789...\",\n      \"reason\": \"manual\",\n      \"status\": \"COMPLETED\",\n      \"startedAt\": \"2024-01-15T10:00:00.000Z\",\n      \"completedAt\": \"2024-01-15T10:00:08.500Z\",\n      \"durationMs\": 8500,\n      \"reviewsFetched\": 50,\n      \"reviewsNew\": 12,\n      \"reviewsDuplicate\": 38,\n      \"pagesProcessed\": 5,\n      \"sourcesProcessed\": [\"mostRecent\", \"mostHelpful\"],\n      \"triggeredBy\": {\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Ingestion Run",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{sessionCookie}}",
+                "description": "Session cookie for authentication"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"runId\": \"{{runId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reviews", "cancel"]
+            },
+            "description": "Cancel an in-progress ingestion run.\n\n**Note**: This is typically called via Next.js Server Actions from the UI."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"Ingestion run cancelled\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request script runs before every request",
+          "// You can add common setup logic here"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Test script runs after every request",
+          "// Add common assertions here",
+          "",
+          "pm.test('Response time is less than 30s', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+          "});",
+          "",
+          "pm.test('Response has valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ]
+}

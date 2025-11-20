@@ -51,6 +51,14 @@ enum SnapshotStatus {
   FAILED
 }
 
+enum IngestionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum InsightType {
   FEATURE_REQUEST
   BUG_OR_COMPLAINT
@@ -124,7 +132,8 @@ model User {
   accounts         Account[]
   sessions         Session[]
   workspaceMembers WorkspaceMember[]
-  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  ownedWorkspaces  Workspace[]          @relation("WorkspaceOwner")
+  triggeredRuns    ReviewIngestionRun[]
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -179,6 +188,7 @@ model Workspace {
   reviews         Review[]
   reviewSnapshots ReviewSnapshot[]
   insights        ReviewSnapshotInsight[]
+  ingestionRuns   ReviewIngestionRun[]
 
   @@index([ownerId])
   @@index([deletedAt])
@@ -239,9 +249,10 @@ model App {
   deletedAt DateTime? @map(name: "deleted_at")
 
   // Relations
-  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   reviews         Review[]
   reviewSnapshots ReviewSnapshot[]
+  ingestionRuns   ReviewIngestionRun[]
 
   @@unique([workspaceId, appStoreId])
   @@index([workspaceId, status])
@@ -349,6 +360,7 @@ model ReviewSnapshot {
   insights           ReviewSnapshotInsight[]
   positiveAspects    PositiveAspect[]
   llmInsight         LLMInsight?
+  ingestionRun       ReviewIngestionRun?
 
   @@index([workspaceId, appId, analysisDate])
   @@index([status])
@@ -481,4 +493,55 @@ model LLMInsight {
   reviewSnapshot ReviewSnapshot @relation(fields: [reviewSnapshotId], references: [id], onDelete: Cascade)
 
   @@map(name: "llm_insights")
+}
+
+// ============================================================================
+// Review Ingestion Models
+// ============================================================================
+
+model ReviewIngestionRun {
+  id          String @id @default(cuid())
+  workspaceId String
+  appId       String
+
+  // Trigger context
+  reason        String // "manual" | "scheduled"
+  triggeredById String? @map(name: "triggered_by_id")
+
+  // Status & timing
+  status      IngestionStatus @default(PENDING)
+  startedAt   DateTime        @default(now()) @map(name: "started_at")
+  completedAt DateTime?       @map(name: "completed_at")
+  durationMs  Int?            @map(name: "duration_ms")
+
+  // Results
+  reviewsFetched   Int      @default(0) @map(name: "reviews_fetched")
+  reviewsNew       Int      @default(0) @map(name: "reviews_new")
+  reviewsDuplicate Int      @default(0) @map(name: "reviews_duplicate")
+  pagesProcessed   Int      @default(0) @map(name: "pages_processed")
+  sourcesProcessed String[] @default([]) @map(name: "sources_processed")
+
+  // Error tracking
+  errorCode    String? @map(name: "error_code")
+  errorMessage String? @map(name: "error_message") @db.Text
+
+  // Snapshot link (for Task 4 - created after ingestion)
+  snapshotId String?         @unique @map(name: "snapshot_id")
+  snapshot   ReviewSnapshot? @relation(fields: [snapshotId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @updatedAt @map(name: "updated_at")
+
+  // Relations
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  app         App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  triggeredBy User?     @relation(fields: [triggeredById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([appId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([workspaceId, startedAt])
+  @@map(name: "review_ingestion_runs")
 }

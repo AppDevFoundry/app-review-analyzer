@@ -1,16 +1,22 @@
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import Link from "next/link"
-import { ChevronLeft, Star, Calendar, MessageSquare, TrendingUp } from "lucide-react"
+import { ChevronLeft, Star, Calendar, MessageSquare, TrendingUp, Download } from "lucide-react"
 import { formatDistanceToNow, format } from "date-fns"
 
+import { auth } from "@/auth"
+import { prisma } from "@/lib/db"
 import { getAppDetails, getAppReviews, getAppInsights } from "@/app/actions/apps"
+import { getQuotaStatus } from "@/app/actions/reviews"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { FetchReviewsButton } from "@/components/reviews/fetch-reviews-button"
+import { IngestionHistory } from "@/components/reviews/ingestion-history"
+import { QuotaIndicator, LastSyncedIndicator } from "@/components/reviews/ingestion-status"
 
 interface AppDetailsPageProps {
   params: {
@@ -20,10 +26,11 @@ interface AppDetailsPageProps {
 
 export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
   // Fetch all data in parallel
-  const [appResult, reviewsResult, insightsResult] = await Promise.all([
+  const [appResult, reviewsResult, insightsResult, quotaResult] = await Promise.all([
     getAppDetails(params.id),
     getAppReviews(params.id, { limit: 100 }),
     getAppInsights(params.id),
+    getQuotaStatus(),
   ])
 
   if (!appResult.success || !appResult.data) {
@@ -33,6 +40,7 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
   const app = appResult.data
   const reviews = reviewsResult.success ? reviewsResult.data : []
   const insights = insightsResult.success ? insightsResult.data : null
+  const quota = quotaResult.success ? quotaResult.data : null
 
   // Calculate rating distribution from reviews
   const ratingCounts = reviews.reduce((acc, review) => {
@@ -79,6 +87,25 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Fetch Reviews Button */}
+        <div className="flex flex-col items-end gap-2">
+          <FetchReviewsButton
+            appId={app.id}
+            appName={app.name}
+            appStatus={app.status}
+            runsUsedToday={quota?.manualRunsUsedToday || 0}
+            maxRunsPerDay={quota?.manualRunsPerDay || 1}
+          />
+          {quota && (
+            <QuotaIndicator
+              used={quota.manualRunsUsedToday}
+              limit={quota.manualRunsPerDay}
+              showLabel={false}
+            />
+          )}
+          <LastSyncedIndicator lastSyncedAt={app.lastSyncedAt} />
         </div>
       </div>
 
@@ -139,6 +166,9 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
           </TabsTrigger>
           <TabsTrigger value="history">
             Analysis History ({app._count.reviewSnapshots})
+          </TabsTrigger>
+          <TabsTrigger value="ingestion">
+            Fetch History
           </TabsTrigger>
         </TabsList>
 
@@ -376,6 +406,11 @@ export default async function AppDetailsPage({ params }: AppDetailsPageProps) {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Ingestion History Tab */}
+        <TabsContent value="ingestion" className="space-y-4">
+          <IngestionHistory appId={app.id} limit={10} showCard={false} />
         </TabsContent>
       </Tabs>
     </div>

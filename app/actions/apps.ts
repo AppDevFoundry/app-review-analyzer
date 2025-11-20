@@ -249,6 +249,7 @@ export async function getApps(
     const apps = await prisma.app.findMany({
       where: {
         workspaceId: workspaceMember.workspace.id,
+        ...(includeDeleted ? {} : { deletedAt: null }),
       },
       select: {
         id: true,

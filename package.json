@@ -19,6 +19,8 @@
     "db:reset:dev": "prisma migrate reset --force --skip-seed && tsx prisma/seed.ts",
     "db:studio": "npx prisma studio",
     "test": "vitest run",
+    "test:unit": "vitest run --exclude='tests/integration/**'",
+    "test:integration": "vitest run tests/integration/",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage"
