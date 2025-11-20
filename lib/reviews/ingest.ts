@@ -447,7 +447,7 @@ function calculateRetryDelay(failures: number): number | null {
 }
 
 /**
- * Record health metrics (stub for Phase 6)
+ * Record health metrics
  */
 async function recordMetrics(data: {
   workspaceId: string
@@ -456,9 +456,28 @@ async function recordMetrics(data: {
   reviewsInserted: number
   errorCode?: IngestionErrorCode
 }): Promise<void> {
-  // Stub for Phase 6 - Health Monitoring
-  // Will implement full metrics recording later
-  console.log("[Ingestion Metrics]", data)
+  try {
+    const { recordIngestionSuccess, recordIngestionFailure } = await import(
+      "@/lib/metrics/health-tracker"
+    )
+
+    if (data.success) {
+      await recordIngestionSuccess({
+        workspaceId: data.workspaceId,
+        durationMs: data.durationMs,
+        reviewsInserted: data.reviewsInserted,
+      })
+    } else if (data.errorCode) {
+      await recordIngestionFailure({
+        workspaceId: data.workspaceId,
+        durationMs: data.durationMs,
+        errorCode: data.errorCode,
+      })
+    }
+  } catch (error) {
+    console.error("[Ingestion] Failed to record metrics:", error)
+    // Don't fail the ingestion if metrics fail
+  }
 }
 
 /**
